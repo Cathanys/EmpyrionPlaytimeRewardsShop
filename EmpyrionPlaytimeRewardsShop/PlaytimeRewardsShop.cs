@@ -1,5 +1,6 @@
 ﻿using Eleon.Modding;
 using EmpyrionNetAPIAccess;
+using EmpyrionNetAPIDefinitions;
 using EmpyrionNetAPITools;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,7 @@ namespace EmpyrionPlaytimeRewardsShop
         public override void Initialize(ModGameAPI dediAPI)
         {
             DediAPI = dediAPI;
+            LogLevel = LogLevel.Message;
 
             Log($"**PlaytimeRewardsShop: loaded");
 
@@ -145,16 +147,24 @@ namespace EmpyrionPlaytimeRewardsShop
             }
 
             // 2. add 100 Neodynium Ore to the players inventory
-            //var exchange = new ItemExchangeInfo()
-            //{
-            //    buttonText = "close",
-            //    desc = description,
-            //    id = playerId,
-            //    items = (items ?? new ItemStack[] { }).Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
-            //    title = $"Backpack ({name}) {(config.MaxBackpacks > 1 ? "#" + lastUsed : string.Empty)}"
-            //};
-            //await Request_Player_ItemExchange(Timeouts.NoResponse, exchange);
-            await Request_Player_AddItem(new IdItemStack(info.playerId, new ItemStack(4300, 100)));
+            var giveReward = new ItemExchangeInfo()
+            {
+                buttonText = "close",
+                desc = "Transfer the items into your inventory",
+                id = info.playerId,
+                items = (new ItemStack[] { new ItemStack(4300, 100)}),//.Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
+                title = $"Playtime Shop"
+            };
+            try
+            {
+                await Request_Player_ItemExchange(Timeouts.NoResponse, giveReward);
+            }
+            catch (Exception error)
+            {
+                Log($"transfer items failed for player {info.playerId} :{error}", LogLevel.Error);
+                MessagePlayer(info.playerId, $"transfer items failed {error}");
+            }
+            
 
             // 3. remove the points from the player data
             currentPlayerData.Current.Points -= 100;
