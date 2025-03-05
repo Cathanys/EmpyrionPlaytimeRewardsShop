@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using YamlDotNet.Core.Tokens;
 
 namespace EmpyrionPlaytimeRewardsShop
 {
@@ -55,9 +56,9 @@ namespace EmpyrionPlaytimeRewardsShop
             {
                 Task task = updateLoginTimestamp(obj);
             }
-            catch (Exception)
+            catch(Exception error)
             {
-
+                Log($"Update login timestamp failed :{error}", LogLevel.Error);
             }
         }
 
@@ -67,9 +68,9 @@ namespace EmpyrionPlaytimeRewardsShop
             {
                 Task task = updatePoints(obj);
             }
-            catch (Exception)
+            catch (Exception error)
             {
-
+                Log($"Update points failed :{error}", LogLevel.Error);
             }
         }
 
@@ -163,8 +164,7 @@ namespace EmpyrionPlaytimeRewardsShop
             {
                 Log($"transfer items failed for player {info.playerId} :{error}", LogLevel.Error);
                 MessagePlayer(info.playerId, $"transfer items failed {error}");
-            }
-            
+            }            
 
             // 3. remove the points from the player data
             currentPlayerData.Current.Points -= 100;
