@@ -33,7 +33,7 @@ For each item you want to add to the shop, add an entry in the RewardItems secti
 For the item ids enter the "Game ID" from the database: https://empyrionbuddy.com (with the correct Scenario activated in their settings)
 
 ## Usage
-Enter the command into the server or faction chat in your game.
+Enter the command into the private or faction chat in your game.
 
 ```
 \prs help    : shows all available commands in a Window
