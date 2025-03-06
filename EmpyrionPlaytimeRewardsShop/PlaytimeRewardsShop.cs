@@ -43,7 +43,7 @@ namespace EmpyrionPlaytimeRewardsShop
             ChatCommandManager.CommandPrefix = Configuration.Current.ChatCommandPrefix;
 
             ChatCommands.Add(new ChatCommand($"playtime help", (I, A) => DisplayHelp(I.playerId), $"help and commands for the playtime shop"));
-            ChatCommands.Add(new ChatCommand($"points", (I, A) => ShowPoints(I, A), $"show the player's points"));
+            ChatCommands.Add(new ChatCommand($"points", (I, A) => ShowPoints(I, A), $"update and show the player's points"));
             ChatCommands.Add(new ChatCommand($"buy Neo", (I, A) => BuyOre(I, A), $"buy 100 Neodynium ore"));
 
             Event_Player_Connected += PlaytimeRewardsShop_Event_Player_Connected;
@@ -127,7 +127,7 @@ namespace EmpyrionPlaytimeRewardsShop
             await DisplayHelp(playerId,
                 $"Every {Configuration.Current.RewardPeriodInMinutes} minutes you get {Configuration.Current.RewardPointsPerPeriod} points\n" +
                 "You can buy these items: \n" +
-                "100 Neomydium Ore for 1000 points.\n");
+                "100 Neomydium Ore for 100 points.\n");
         }
 
         private async Task BuyOre(ChatInfo info, Dictionary<string, string> args)

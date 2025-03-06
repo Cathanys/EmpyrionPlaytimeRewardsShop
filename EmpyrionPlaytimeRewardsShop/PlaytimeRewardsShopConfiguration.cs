@@ -10,6 +10,6 @@ namespace EmpyrionPlaytimeRewardsShop
         public LogLevel LogLevel { get; set; } = LogLevel.Message;
         public string ChatCommandPrefix { get; set; } = "/\\";
         public int RewardPeriodInMinutes { get; set; } = 5;
-        public int RewardPointsPerPeriod { get; set; } = 100;
+        public int RewardPointsPerPeriod { get; set; } = 10;
     }
 }
