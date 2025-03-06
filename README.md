@@ -6,6 +6,8 @@ This is my first Empyrion mod combining the [Backpack Extender](https://github.c
 Thanks for all the support from the Empyrion Discord 💜
 
 ## Installation
+
+**Don't use it. I have not tested it. It will crash with 99% chance.**
 For Server copy the content of the EmpyrionPlayerRewardsShop ZIP into the folder Content\Mods\
 For Single Player mode copy the content of the EmpyrionPlayerRewardsShop_Client ZIP into the folder Content\Mods\
 
