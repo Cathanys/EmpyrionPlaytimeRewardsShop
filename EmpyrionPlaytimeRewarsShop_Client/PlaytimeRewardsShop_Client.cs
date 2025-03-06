@@ -228,18 +228,21 @@ namespace EmpyrionPlaytimeRewarsShop_Client
             // calculate the points
             TimeSpan timeDiff = DateTime.Now - this.playerData.loginTimestamp;
             //timeDiff = timeDiff.Add(new TimeSpan(0,25,0));
-            this.playerData.Points += Convert.ToInt32(timeDiff.TotalSeconds * this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0));
-
-            // update the timestamp
-            this.playerData.loginTimestamp = DateTime.Now;
-            JsonSerializer serializer = new JsonSerializer();
-            serializer.Converters.Add(new JavaScriptDateTimeConverter());
-            serializer.NullValueHandling = NullValueHandling.Ignore;
-
-            using (StreamWriter sw = new StreamWriter(Path.Combine(saveGameModPath, playerDataFileName)))
-            using (JsonWriter writer = new JsonTextWriter(sw))
+            if (timeDiff.TotalSeconds > this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0))
             {
-                serializer.Serialize(writer, this.playerData);
+                this.playerData.Points += Convert.ToInt32(timeDiff.TotalSeconds * this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0));
+
+                // update the timestamp
+                this.playerData.loginTimestamp = DateTime.Now;
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Converters.Add(new JavaScriptDateTimeConverter());
+                serializer.NullValueHandling = NullValueHandling.Ignore;
+
+                using (StreamWriter sw = new StreamWriter(Path.Combine(saveGameModPath, playerDataFileName)))
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, this.playerData);
+                }
             }
         }
 

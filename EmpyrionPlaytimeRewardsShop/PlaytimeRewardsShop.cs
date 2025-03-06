@@ -5,6 +5,7 @@ using EmpyrionNetAPITools;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace EmpyrionPlaytimeRewardsShop
@@ -67,7 +68,7 @@ namespace EmpyrionPlaytimeRewardsShop
         {
             try
             {
-                Task task = updatePoints(obj);
+                Task task = updatePointsAndTimestamp(obj);
             }
             catch (Exception error)
             {
@@ -90,7 +91,7 @@ namespace EmpyrionPlaytimeRewardsShop
             currentPlayerData.Save();
         }
 
-        private async Task updatePoints(Id obj)
+        private async Task updatePointsAndTimestamp(Id obj)
         {
             var P = await Request_Player_Info(obj);
 
@@ -100,15 +101,7 @@ namespace EmpyrionPlaytimeRewardsShop
             };
             currentPlayerData.Load();
 
-            // calculate the time difference
-            TimeSpan timeDiff = DateTime.Now - currentPlayerData.Current.loginTimestamp;
-
-            // update the points
-            currentPlayerData.Current.Points = Convert.ToInt32(timeDiff.TotalSeconds * 1000.0 / 300.0); // 1000 points per 5 minutes
-
-            // update the timestamp
-            currentPlayerData.Current.loginTimestamp = DateTime.Now;
-            currentPlayerData.Save();
+            savePlayerPointsAndTimestamp(currentPlayerData);
         }
 
         private void LoadConfiguration()
@@ -124,10 +117,14 @@ namespace EmpyrionPlaytimeRewardsShop
 
         private async Task DisplayHelp(int playerId)
         {
-            await DisplayHelp(playerId,
-                $"Every {Configuration.Current.RewardPeriodInMinutes} minutes you get {Configuration.Current.RewardPointsPerPeriod} points\n" +
-                "You can buy these items: \n" +
-                "100 Neomydium Ore for 100 points.\n");
+            string helpString = $"Every {Configuration.Current.RewardPeriodInMinutes} minutes you get {Configuration.Current.RewardPointsPerPeriod} points\n";
+            helpString += "You can buy these items: \n";
+            foreach (ShopItem item in Configuration.Current.RewardItems)
+            {
+                helpString += $"{item.quantity} {item.Description} for {item.price} points.\n";
+            }
+            
+            await DisplayHelp(playerId, helpString);
         }
 
         private async Task BuyItem(ChatInfo info, Dictionary<string, string> args, ShopItem shopItem)
@@ -140,21 +137,24 @@ namespace EmpyrionPlaytimeRewardsShop
             };
             currentPlayerData.Load();
 
-            // 1. check if the player has enough points
-            if (currentPlayerData.Current.Points < 100)
+            // 1. update the players points
+            savePlayerPointsAndTimestamp(currentPlayerData);
+
+            // 2. check if the player has enough points
+            if (currentPlayerData.Current.Points < shopItem.price)
             {
-                MessagePlayer(info.playerId, $"you only have {currentPlayerData.Current.Points} points.\nNot enough to buy the ore for 100 points.\nPlay more <3");
+                MessagePlayer(info.playerId, $"you only have {currentPlayerData.Current.Points} points.\nNot enough to buy the {shopItem.quantity} {shopItem.Description} for {shopItem.price} points.\nPlay more <3");
                 return;
             }
 
-            // 2. add 100 Neodynium Ore to the players inventory
+            // 3. add the item to the players inventory
             var giveReward = new ItemExchangeInfo()
             {
                 buttonText = "close",
                 desc = "Transfer the items into your inventory",
                 id = info.playerId,
-                items = (new ItemStack[] { new ItemStack(4300, 100)}),//.Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
-                title = $"Playtime Shop"
+                items = (new ItemStack[] { new ItemStack(shopItem.itemId, shopItem.quantity) }),//.Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
+                title = "Playtime Shop"
             };
             try
             {
@@ -166,9 +166,24 @@ namespace EmpyrionPlaytimeRewardsShop
                 MessagePlayer(info.playerId, $"transfer items failed {error}");
             }            
 
-            // 3. remove the points from the player data
-            currentPlayerData.Current.Points -= 100;
+            // 4. remove the points from the player data and save
+            currentPlayerData.Current.Points -= shopItem.price;
             currentPlayerData.Save();
+        }
+
+        private void savePlayerPointsAndTimestamp(ConfigurationManager<PlayerData> currentPlayerData)
+        {
+            // calculate the time difference
+            TimeSpan timeDiff = DateTime.Now - currentPlayerData.Current.loginTimestamp;
+            if (timeDiff.TotalSeconds > this.Configuration.Current.RewardPointsPerPeriod / (this.Configuration.Current.RewardPeriodInMinutes * 60.0))
+            {
+                // update the points
+                currentPlayerData.Current.Points += Convert.ToInt32(timeDiff.TotalSeconds * this.Configuration.Current.RewardPointsPerPeriod / (this.Configuration.Current.RewardPeriodInMinutes * 60.0));
+
+                // update the timestamp
+                currentPlayerData.Current.loginTimestamp = DateTime.Now;
+                currentPlayerData.Save();
+            }
         }
 
         private async Task ShowPoints(ChatInfo info, Dictionary<string, string> args)
