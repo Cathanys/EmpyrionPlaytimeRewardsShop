@@ -65,7 +65,8 @@ namespace EmpyrionPlaytimeRewarsShop_Client
             modApi.Application.ChatMessageSent += OnChatMessageSent;
 
             // read the path to the configuration and player data files
-            saveGameModPath = modApi.Application.GetPathFor(AppFolder.SaveGame) + @"Mods\" + this.GetType().Name;
+            saveGameModPath = modApi.Application.GetPathFor(AppFolder.SaveGame) + @"\Mods\" + this.GetType().Name + @"\";
+            modApi.Log($"PlaytimeRewardsShop Configuration Path: {saveGameModPath}");
 
             try
             {
@@ -101,16 +102,28 @@ namespace EmpyrionPlaytimeRewarsShop_Client
 
         private void readConfiguration()
         {
-            if (!File.Exists(saveGameModPath + configFileName))
+            string configFilePath = Path.Combine(saveGameModPath, configFileName);
+            if (!File.Exists(configFilePath))
             {
                 // create a new configuration
                 this.configuration = new PlaytimeRewardsShopConfiguration();
 
-                File.WriteAllText(saveGameModPath + configFileName, JsonConvert.SerializeObject(this.configuration));
+                // add a few standard items
+                ShopItem newItem = new ShopItem()
+                {
+                    Name = "neo",
+                    Description = "Neodynium Erz",
+                    itemId = 4300,
+                    price = 100,
+                    quantity = 100
+                };
+                this.configuration.RewardItems.Add(newItem);
+
+                File.WriteAllText(configFilePath, JsonConvert.SerializeObject(this.configuration));
             }
             else
             {
-                using (StreamReader configFile = File.OpenText(saveGameModPath + configFileName))
+                using (StreamReader configFile = File.OpenText(configFilePath))
                 {
                     JsonSerializer serializer = new JsonSerializer();
                     this.configuration = (PlaytimeRewardsShopConfiguration)serializer.Deserialize(configFile, typeof(PlaytimeRewardsShopConfiguration));
@@ -120,7 +133,9 @@ namespace EmpyrionPlaytimeRewarsShop_Client
 
         private void readPlayerData()
         {
-            if (!File.Exists(saveGameModPath + playerDataFileName))
+            string playerDataFilePath = Path.Combine(saveGameModPath, playerDataFileName);
+
+            if (!File.Exists(playerDataFilePath))
             {
                 playerData = new PlayerData()
                 {
@@ -130,7 +145,7 @@ namespace EmpyrionPlaytimeRewarsShop_Client
             }
             else
             {
-                using (StreamReader playerDataFile = File.OpenText(saveGameModPath + playerDataFileName))
+                using (StreamReader playerDataFile = File.OpenText(playerDataFilePath))
                 {
                     JsonSerializer serializer = new JsonSerializer();
                     serializer.Converters.Add(new JavaScriptDateTimeConverter());
@@ -202,8 +217,7 @@ namespace EmpyrionPlaytimeRewarsShop_Client
             JsonSerializer serializer = new JsonSerializer();
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
-
-            using (StreamWriter file = File.CreateText(saveGameModPath + playerDataFileName))
+            using (StreamWriter file = File.CreateText(Path.Combine(saveGameModPath, playerDataFileName)))
             {
                 serializer.Serialize(file, this.playerData);
             }
@@ -222,7 +236,7 @@ namespace EmpyrionPlaytimeRewarsShop_Client
             serializer.Converters.Add(new JavaScriptDateTimeConverter());
             serializer.NullValueHandling = NullValueHandling.Ignore;
 
-            using (StreamWriter sw = new StreamWriter(saveGameModPath + playerDataFileName))
+            using (StreamWriter sw = new StreamWriter(Path.Combine(saveGameModPath, playerDataFileName)))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, this.playerData);
@@ -266,14 +280,21 @@ namespace EmpyrionPlaytimeRewarsShop_Client
 
                 updatePointsAndTimestamp();
 
-                if (commandSplit[2].ToLower().StartsWith("neo"))
+                foreach (ShopItem item in this.configuration.RewardItems)
                 {
-                    buyItem(chatInfo, 4300, 100);
-                }
+                    if (commandSplit[2].ToLower().StartsWith(item.Name))
+                    {
+                        // check if the player has enough points
+                        if(this.playerData.Points < item.price)
+                            modApi.GUI.ShowGameMessage($"You don't have enough {this.playerData.Points} points to buy the item for {item.price} points", prio: 1);
+                        else
+                            buyItem(chatInfo, item);
+                    }
+                }                
             }
         }
 
-        private void buyItem(MessageData chatInfo, int itemID, int amount)
+        private void buyItem(MessageData chatInfo, ShopItem item)
         {
             try
             {
@@ -281,16 +302,19 @@ namespace EmpyrionPlaytimeRewarsShop_Client
                 ItemExchangeInfo giveReward = new ItemExchangeInfo()
                 {
                     buttonText = "close",
-                    desc = $"Transfer the items into your inventory",
+                    desc = "Transfer the items into your inventory",
                     id = chatInfo.SenderEntityId,
-                    items = (new ItemStack[] { new ItemStack(itemID, amount) }),//.Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
-                    title = $"Playtime Shop"
+                    items = (new ItemStack[] { new ItemStack(item.itemId, item.quantity) }),//.Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
+                    title = "Playtime Shop"
                 };
                 if (null != gameApi)
                 {
                     if (gameApi.Game_Request(CmdId.Request_Player_ItemExchange, requestNr, giveReward))
                     {
+                        modApi.Log($"Item successfully transferred");
+
                         // remove the points
+                        this.playerData.Points -= item.price;
                     }
                     requestNr++;
                 }
