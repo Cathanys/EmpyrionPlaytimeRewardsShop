@@ -1,8 +1,10 @@
-﻿namespace EmpyrionPlaytimeRewardsShop
+﻿using System;
+
+namespace EmpyrionPlaytimeRewardsShop
 {
     public class PlayerData
     {
-        public long loginTimestamp { get; set; } = 0;
-        public int Points { get; set; } = 0;
+        public DateTime loginTimestamp { get; set; }
+        public int Points { get; set; }
     }
 }

@@ -5,10 +5,7 @@ using EmpyrionNetAPITools;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using YamlDotNet.Core.Tokens;
 
 namespace EmpyrionPlaytimeRewardsShop
 {
@@ -38,13 +35,17 @@ namespace EmpyrionPlaytimeRewardsShop
 
             Log($"**PlaytimeRewardsShop: loaded");
 
-            LoadConfiuration();
+            LoadConfiguration();
             LogLevel = Configuration.Current.LogLevel;
             ChatCommandManager.CommandPrefix = Configuration.Current.ChatCommandPrefix;
 
-            ChatCommands.Add(new ChatCommand($"playtime help", (I, A) => DisplayHelp(I.playerId), $"help and commands for the playtime shop"));
+            ChatCommands.Add(new ChatCommand($"help", (I, A) => DisplayHelp(I.playerId), $"help and commands for the playtime shop"));
             ChatCommands.Add(new ChatCommand($"points", (I, A) => ShowPoints(I, A), $"update and show the player's points"));
-            ChatCommands.Add(new ChatCommand($"buy Neo", (I, A) => BuyOre(I, A), $"buy 100 Neodynium ore"));
+
+            foreach (ShopItem item in this.Configuration.Current.RewardItems)
+            {
+                ChatCommands.Add(new ChatCommand($"buy {item.Name}", (I, A) => BuyItem(I, A, item), $"buy {item.quantity} {item.Description} for {item.price} points"));
+            }            
 
             Event_Player_Connected += PlaytimeRewardsShop_Event_Player_Connected;
             Event_Player_Disconnected += PlaytimeRewardsShop_Event_Player_Disconnected;
@@ -85,7 +86,7 @@ namespace EmpyrionPlaytimeRewardsShop
             currentPlayerData.Load();
 
             // update the current timestamp
-            currentPlayerData.Current.loginTimestamp = DateTime.Now.Ticks;
+            currentPlayerData.Current.loginTimestamp = DateTime.Now;
             currentPlayerData.Save();
         }
 
@@ -100,18 +101,17 @@ namespace EmpyrionPlaytimeRewardsShop
             currentPlayerData.Load();
 
             // calculate the time difference
-            long tickDifference = DateTime.Now.Ticks - currentPlayerData.Current.loginTimestamp;
+            TimeSpan timeDiff = DateTime.Now - currentPlayerData.Current.loginTimestamp;
 
             // update the points
-            TimeSpan timeDiff = TimeSpan.FromTicks(tickDifference);
             currentPlayerData.Current.Points = Convert.ToInt32(timeDiff.TotalSeconds * 1000.0 / 300.0); // 1000 points per 5 minutes
 
             // update the timestamp
-            currentPlayerData.Current.loginTimestamp = DateTime.Now.Ticks;
+            currentPlayerData.Current.loginTimestamp = DateTime.Now;
             currentPlayerData.Save();
         }
 
-        private void LoadConfiuration()
+        private void LoadConfiguration()
         {
             Configuration = new ConfigurationManager<PlaytimeRewardsShopConfiguration>
             {
@@ -130,7 +130,7 @@ namespace EmpyrionPlaytimeRewardsShop
                 "100 Neomydium Ore for 100 points.\n");
         }
 
-        private async Task BuyOre(ChatInfo info, Dictionary<string, string> args)
+        private async Task BuyItem(ChatInfo info, Dictionary<string, string> args, ShopItem shopItem)
         {
             var P = await Request_Player_Info(info.playerId.ToId());
 
