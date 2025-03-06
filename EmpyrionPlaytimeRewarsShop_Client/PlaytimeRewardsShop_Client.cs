@@ -41,7 +41,7 @@ namespace EmpyrionPlaytimeRewarsShop_Client
         /// <summary>
         /// name of the config file
         /// </summary>
-        private const string configFileName = "config.json";
+        private const string configFileName = "Configuration.json";
 
         /// <summary>
         /// name of the player data file

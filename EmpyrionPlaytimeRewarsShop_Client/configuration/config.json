@@ -2,6 +2,9 @@
 	"ChatCommandPrefix":"/\\prs",
 	"RewardPeriodInMinutes":5,
 	"RewardPointsPerPeriod":10,
-	"RewardItems":[
-	{"Name":"neo","Description":"Neodynium Ore","itemId":4300,"quantity":100,"price":100},
-	{"Name":"sath","Description":"Sathium Ore","itemId":4300,"quantity":100,"price":100}]}
+	"RewardItems":
+	[
+		{"Name":"neo","Description":"Neodynium Ore","itemId":4300,"quantity":100,"price":100},
+		{"Name":"sath","Description":"Sathium Ore","itemId":4332,"quantity":100,"price":100}
+	]
+}
