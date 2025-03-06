@@ -33,6 +33,9 @@ For the item ids enter the "Game ID" from the database: https://empyrionbuddy.co
 ## Usage
 Enter the command into the server or faction chat in your game.
 
-\prs help
-
+```
+\prs help    : shows all available commands in a Window
+\prs points  : updates the points for the player
+\prs buy neo : buys the item neo with the conditions of the configuration file from the player points
+```
 Source: https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop
