@@ -295,7 +295,14 @@ namespace EmpyrionPlaytimeRewarsShop_Client
                 {
                     helpText += $"{item.quantity} {item.Description} for {item.price} points\n";
                 }
-                modApi.GUI.ShowGameMessage(helpText, prio: 1);
+                //modApi.GUI.ShowGameMessage(helpText, prio: 1);
+
+                DialogConfig dialogConfig = new DialogConfig();
+                dialogConfig.ButtonTexts = new string[] { "close" };
+                dialogConfig.TitleText = "Playtime Shop";
+                dialogConfig.BodyText = helpText;
+
+                modApi.GUI.ShowDialog(dialogConfig, null, 0);
             }
             else if (commandSplit[1].ToLower().StartsWith("points"))
             {
