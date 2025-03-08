@@ -11,12 +11,12 @@ using System.IO;
 namespace EmpyrionPlaytimeRewarsShop_Client
 {
     // Class implementing the new IMod interface as the legacy modding is not available on client side
-    public class PlaytimeRewardsShop_Client : IMod
+    public class PlaytimeRewardsShop_Client : IMod, ModInterface
     {
         /// <summary>
-        /// reference to the mod api
+        /// reference to the mod api 2
         /// </summary>
-        IModApi modApi;
+        internal static IModApi modApi;
 
         /// <summary>
         /// increase the number with each request
@@ -48,13 +48,15 @@ namespace EmpyrionPlaytimeRewarsShop_Client
         /// </summary>
         private const string playerDataFileName = "playerData.json";
 
+        // ----- IMod methods -------------------------------------------------
+
         /// <summary>
         /// Called once early when the host process starts - treat this like a constructor for your mod
         /// </summary>
         /// <param name="modAPI">mod api</param>
         public void Init(IModApi modAPI)
         {
-            this.modApi = modAPI;
+            modApi = modAPI;
 
             modApi.Log("PlaytimeRewardsShop initialized");
 
@@ -112,12 +114,22 @@ namespace EmpyrionPlaytimeRewarsShop_Client
                 ShopItem newItem = new ShopItem()
                 {
                     Name = "neo",
-                    Description = "Neodynium Erz",
-                    itemId = 4300,
+                    Description = "Neodynium Ore",
                     price = 100,
-                    quantity = 100
+                    quantity = 100,
+                    itemId = 4300
                 };
                 this.configuration.RewardItems.Add(newItem);
+
+                ShopStat newStat = new ShopStat()
+                {
+                    Name = "life",
+                    Description = "Health",
+                    price = 100,
+                    quantity = 100,
+                    maxStat = 2000
+                };
+                this.configuration.RewardStats.Add(newStat);
 
                 File.WriteAllText(configFilePath, JsonConvert.SerializeObject(this.configuration));
             }
@@ -164,16 +176,20 @@ namespace EmpyrionPlaytimeRewarsShop_Client
         {
             modApi.Log($"Chat msg to {data.Channel}: {data.Text}");
 
-            // if player wrote a command in the faction or private, we react
-            if (data.Channel == Eleon.MsgChannel.Faction || data.Channel == Eleon.MsgChannel.SinglePlayer)
-            {
-                parseCommand(data);
-            }
             // if player wrote a 'echo' message to the server then we respond
-            else if (data.Channel == Eleon.MsgChannel.Server && data.Text == "echo")
+            if (data.Channel == Eleon.MsgChannel.Server || data.Channel == Eleon.MsgChannel.Faction)
             {
-                AnswerAsync();
-                modApi.Log("Triggered answer...");
+                if(data.Channel == Eleon.MsgChannel.Server && data.Text == "echo")
+                {
+                    AnswerAsync();
+                    modApi.Log("Triggered answer...");
+                }
+                else
+                {
+                    // if player wrote a command in the faction or server, we react
+                    parseCommand(data);
+                }
+
             }
         }
 
@@ -268,7 +284,18 @@ namespace EmpyrionPlaytimeRewarsShop_Client
             if (commandSplit[1].StartsWith("help"))
             {
                 // print the available commands
-                modApi.GUI.ShowGameMessage($"Every {this.configuration.RewardPeriodInMinutes} minutes you win {this.configuration.RewardPointsPerPeriod} points", prio: 1);
+                string helpText = $"Every {this.configuration.RewardPeriodInMinutes} minutes you win {this.configuration.RewardPointsPerPeriod} points\n";
+                helpText += "You can buy:\n";
+
+                foreach(ShopItem item in this.configuration.RewardItems)
+                {
+                    helpText += $"{item.quantity} {item.Description} for {item.price} points\n";
+                }
+                foreach (ShopStat item in this.configuration.RewardStats)
+                {
+                    helpText += $"{item.quantity} {item.Description} for {item.price} points\n";
+                }
+                modApi.GUI.ShowGameMessage(helpText, prio: 1);
             }
             else if (commandSplit[1].ToLower().StartsWith("points"))
             {
@@ -291,9 +318,30 @@ namespace EmpyrionPlaytimeRewarsShop_Client
                         if(this.playerData.Points < item.price)
                             modApi.GUI.ShowGameMessage($"You don't have enough {this.playerData.Points} points to buy the item for {item.price} points", prio: 1);
                         else
+                        {
                             buyItem(chatInfo, item);
+                            return; // item found in the list and transferred
+                        }
+                            
                     }
-                }                
+                }
+
+                // if it is not an item, maybe it is a stat
+                foreach (ShopStat stat in this.configuration.RewardStats)
+                {
+                    if (commandSplit[2].ToLower().StartsWith(stat.Name))
+                    {
+                        // check if the player has enough points
+                        if (this.playerData.Points < stat.price)
+                            modApi.GUI.ShowGameMessage($"You don't have enough {this.playerData.Points} points to buy the item for {stat.price} points", prio: 1);
+                        else
+                        {
+                            buyStat(chatInfo, stat);
+                            return; // stat found in the list and transferred
+                        }
+
+                    }
+                }
             }
         }
 
@@ -301,7 +349,8 @@ namespace EmpyrionPlaytimeRewarsShop_Client
         {
             try
             {
-                ModGameAPI gameApi = modApi as ModGameAPI;
+                modApi.Log($"Try to transfer item {item.Name} to player {chatInfo.SenderEntityId} or {modApi.Application.LocalPlayer.Id}");
+
                 ItemExchangeInfo giveReward = new ItemExchangeInfo()
                 {
                     buttonText = "close",
@@ -319,13 +368,75 @@ namespace EmpyrionPlaytimeRewarsShop_Client
                         // remove the points
                         this.playerData.Points -= item.price;
                     }
+                    else
+                    {
+                        modApi.Log($"Gameapi request failed");
+                    }
                     requestNr++;
+                }
+                else
+                {
+                    modApi.Log($"Gameapi is not initialized");
                 }
             }
             catch (Exception error)
             {
                 modApi.Log($"Buy item failed :{error}");
             }
+        }
+
+        private void buyStat(MessageData chatInfo, ShopStat stat)
+        {
+            try
+            {
+                modApi.Log($"Try to add stat {stat.Name} to player {chatInfo.SenderEntityId} or {modApi.Application.LocalPlayer.Id}");
+
+                if (stat.Name.StartsWith("life"))
+                {
+                    // check if the max stat is already reached
+                    if (modApi.Application.LocalPlayer.HealthMax + stat.quantity > stat.maxStat)
+                        modApi.GUI.ShowGameMessage($"Maximum {stat.maxStat} {stat.Description} are allowed", prio: 1);
+                }                
+            }
+            catch (Exception error)
+            {
+                modApi.Log($"Buy stat failed :{error}");
+            }
+        }
+
+        // ----- ModInterface methods -----------------------------------------
+        /// <summary>
+        /// reference to the legacy mod api 1
+        /// </summary>
+        internal static ModGameAPI gameApi;
+
+        /// <summary>
+        /// Called once early when the host process starts - treat this like a constructor for your mod
+        /// </summary>
+        /// <param name="legacyModApi"></param>
+        public void Game_Start(ModGameAPI legacyModApi)
+        {
+            gameApi = legacyModApi;
+
+            if (null != modApi)
+                modApi.Log($"Legacy Api initialized");
+            else
+                gameApi?.Console_Write("Game Api initialized");
+        }
+
+        public void Game_Update()
+        {
+            
+        }
+
+        public void Game_Exit()
+        {
+            
+        }
+
+        public void Game_Event(CmdId eventId, ushort seqNr, object data)
+        {
+            
         }
     }
 }
