@@ -1,0 +1,7 @@
+Name: EmpyrionPlaytimeRewardsShop
+Description: Ingame Shop over chat commands to buy items or stats from playtime
+Author: Cathanys
+Version: 0.0.1
+Website: https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop
+
+ModTargets: PfServer,Dedi,Client

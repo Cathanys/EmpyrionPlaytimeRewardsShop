@@ -1,17 +1,19 @@
 ﻿using Eleon;
 using Eleon.Modding;
+using EmpyrionNetAPIAccess;
+using EmpyrionNetAPIDefinitions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using System;
-using Newtonsoft.Json.Converters;
-using System.IO;
 
 namespace EmpyrionPlaytimeRewarsShop_Client
 {
     // Class implementing the new IMod interface as the legacy modding is not available on client side
-    public class PlaytimeRewardsShop_Client : IMod, ModInterface
+    public class PlaytimeRewardsShop_Client : IMod, ModInterface, IDisposable
     {
         /// <summary>
         /// reference to the mod api 2
@@ -211,7 +213,7 @@ namespace EmpyrionPlaytimeRewarsShop_Client
 
         Task DelayAsync()
         {
-            return Task.Factory.StartNew(() => Thread.Sleep(2000)); // sleep in another thread
+            return Task.Factory.StartNew(() => Thread.Sleep(1000)); // sleep in another thread
         }
 
         // Optional method to be executed via the "mod" console command
@@ -295,7 +297,6 @@ namespace EmpyrionPlaytimeRewarsShop_Client
                 {
                     helpText += $"{item.quantity} {item.Description} for {item.price} points\n";
                 }
-                //modApi.GUI.ShowGameMessage(helpText, prio: 1);
 
                 DialogConfig dialogConfig = new DialogConfig();
                 dialogConfig.ButtonTexts = new string[] { "close" };
@@ -366,7 +367,17 @@ namespace EmpyrionPlaytimeRewarsShop_Client
                     items = (new ItemStack[] { new ItemStack(item.itemId, item.quantity) }),//.Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
                     title = "Playtime Shop"
                 };
-                if (null != gameApi)
+
+                if (null != DediLegacyMod)
+                {
+                    modApi.Log($"Try to transfer item over legacy mod");
+
+                    _ = buyItemLegacy(chatInfo.SenderEntityId, giveReward);
+
+                    // remove the points
+                    this.playerData.Points -= item.price;                    
+                }
+                else if (null != gameApi)
                 {
                     if (gameApi.Game_Request(CmdId.Request_Player_ItemExchange, requestNr, giveReward))
                     {
@@ -389,6 +400,21 @@ namespace EmpyrionPlaytimeRewarsShop_Client
             catch (Exception error)
             {
                 modApi.Log($"Buy item failed :{error}");
+            }
+        }
+
+        private async Task buyItemLegacy(int playerID, ItemExchangeInfo giveReward)
+        {
+            var P = await DediLegacyMod?.Request_Player_Info(new Id(playerID));
+
+            try
+            {
+                await DediLegacyMod?.Request_Player_ItemExchange(Timeouts.NoResponse, giveReward);
+            }
+            catch (Exception error)
+            {
+                modApi.Log($"transfer items failed for player {playerID} :{error}");
+                modApi.GUI.ShowGameMessage($"Item transfer failed {error}", prio: 1);
             }
         }
 
@@ -417,6 +443,13 @@ namespace EmpyrionPlaytimeRewarsShop_Client
         /// </summary>
         internal static ModGameAPI gameApi;
 
+        public class DediLegacyModBase : EmpyrionModBase
+        {
+            public override void Initialize(ModGameAPI dediAPI) { }
+        }
+
+        public DediLegacyModBase DediLegacyMod { get; set; }
+
         /// <summary>
         /// Called once early when the host process starts - treat this like a constructor for your mod
         /// </summary>
@@ -424,26 +457,43 @@ namespace EmpyrionPlaytimeRewarsShop_Client
         public void Game_Start(ModGameAPI legacyModApi)
         {
             gameApi = legacyModApi;
+            gameApi?.Console_Write("PlaytimeRewardShop Mod started: Game_Start");
 
-            if (null != modApi)
-                modApi.Log($"Legacy Api initialized");
-            else
-                gameApi?.Console_Write("Game Api initialized");
+            DediLegacyMod = new DediLegacyModBase();
+            DediLegacyMod?.Game_Start(gameApi);
         }
 
         public void Game_Update()
         {
-            
+            DediLegacyMod?.Game_Update();
         }
 
         public void Game_Exit()
         {
-            
+            modApi?.Log("PlaytimeRewardShop Mod exited:Game_Exit");
+
+            DediLegacyMod?.Game_Exit();
+
+            try
+            {
+                Shutdown();
+            }
+            catch (Exception error) { modApi?.Log($"Game_Exit: detach events: {error}"); }
+
+            modApi?.Log("Mod exited:Game_Exit finished");
         }
 
         public void Game_Event(CmdId eventId, ushort seqNr, object data)
         {
-            
+            modApi?.Log($"EmpyrionScripting Mod: Game_Event {eventId} {seqNr} {data}");
+            DediLegacyMod?.Game_Event(eventId, seqNr, data);
+        }
+
+
+        // ----- IDispose Interface methods -----------------------------------------
+        public void Dispose()
+        {
+            modApi?.Log("EmpyrionScripting Mod: Dispose");
         }
     }
 }

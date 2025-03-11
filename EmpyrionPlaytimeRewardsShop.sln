@@ -5,7 +5,7 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmpyrionPlaytimeRewardsShop", "EmpyrionPlaytimeRewardsShop\EmpyrionPlaytimeRewardsShop.csproj", "{CD777E7C-3D0A-422C-9D29-155E7053384D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmpyrionPlaytimeRewarsShop_Client", "EmpyrionPlaytimeRewarsShop_Client\EmpyrionPlaytimeRewarsShop_Client.csproj", "{50ABB75D-E199-41CD-97CC-97C64700B4F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmpyrionPlaytimeRewardsShop_Client", "EmpyrionPlaytimeRewarsShop_Client\EmpyrionPlaytimeRewardsShop_Client.csproj", "{50ABB75D-E199-41CD-97CC-97C64700B4F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
