@@ -15,7 +15,12 @@ For Single Player mode copy the content of the EmpyrionPlayerRewardsShop_Client 
 After starting the server or game with the mod in the correct folder, the configuration will be created here:
 \[SaveGamePath\]\\Mods\\EmpyrionPlaytimeRewardsShop\\Configuration.json
 
-For each item you want to add to the shop, add an entry in the rewards sections.
+For each item you want to add to the shop, add an entry in the item rewards sections.
+The item ids are the "Game ID" from the database: https://empyrionbuddy.com (with the correct Scenario activated in their settings)
+
+Currently these stats are implemented:
+"life" - increases the maximum health
+"exp" - increases the players experience points
 
 ```json
 {
@@ -35,7 +40,7 @@ For each item you want to add to the shop, add an entry in the rewards sections.
 }
 ```
 
-For the item ids enter the "Game ID" from the database: https://empyrionbuddy.com (with the correct Scenario activated in their settings)
+
 
 ## Usage
 Enter the command into the private or faction chat in your game.
