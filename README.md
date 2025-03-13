@@ -29,7 +29,8 @@ For each item you want to add to the shop, add an entry in the rweards sections 
 	],
 	"RewardStats":
 	[
-		{"Name":"life","Description":"Health","quantity":100,"price":100,"maxStat":2000}
+		{"Name":"life","Description":"Health","quantity":100,"price":100,"maxStat":2000},
+		{"Name":"exp","Description":"Experience","quantity":1000,"price":100,"maxStat":500000}
 	]
 }
 ```
