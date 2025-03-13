@@ -36,19 +36,14 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         private PlaytimeRewardsShopConfiguration configuration = null;
 
         /// <summary>
-        /// player points progress
-        /// </summary>
-        private PlayerData playerData = null;
-
-        /// <summary>
         /// name of the config file
         /// </summary>
         private const string configFileName = "Configuration.json";
 
         /// <summary>
-        /// name of the player data file
+        /// template name of the player data file
         /// </summary>
-        private const string playerDataFileName = "playerData.json";
+        private string playerDataFileName = $"PlayerData{0}.json";
 
         // ----- IMod methods -------------------------------------------------
 
@@ -62,11 +57,27 @@ namespace EmpyrionPlaytimeRewardsShop_Client
 
             modApi.Log("PlaytimeRewardsShop initialized");
 
-            // get informed if game has been entered or left
-            modApi.Application.GameEntered += OnGameEntered;
+            // dedicated server
+            if (modApi.Application.Mode == ApplicationMode.DedicatedServer)
+            {
+                try
+                {
+                    modApi.Network.RegisterReceiverForClientPackets(ClientPacketsCallback);
+                }
+                catch (Exception error)
+                {
+                    modApi.Log($"RegisterReceiverForClientPackets failed: {error}");
+                }
+            }
+            // single player
+            else
+            {                
+                // get informed if game has been entered or left
+                modApi.Application.GameEntered += OnGameEntered;
 
-            // get informed if a player has sent a chat message
-            modApi.Application.ChatMessageSent += OnChatMessageSent;
+                // get informed if a player has sent a chat message
+                modApi.Application.ChatMessageSent += OnChatMessageSent;
+            }
 
             // read the path to the configuration and player data files
             saveGameModPath = modApi.Application.GetPathFor(AppFolder.SaveGame) + @"\Mods\" + this.GetType().Name + @"\";
@@ -82,9 +93,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
 
                 // load the mod configuration
                 readConfiguration();
-
-                // load the player data
-                readPlayerData();
             }
             catch (Exception error)
             {
@@ -92,16 +100,26 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             }
         }
 
+        private void ClientPacketsCallback(string sender, int playerEntityId, byte[] data)
+        {
+            modApi?.Log($"Client {sender} Packet received ID {playerEntityId}");
+        }
+
         // Called once just before the game is shut down
         // You may use this like a Dispose method for your mod to release unmanaged resources
         public void Shutdown()
         {
-            modApi.Application.GameEntered -= OnGameEntered;
-            modApi.Application.ChatMessageSent -= OnChatMessageSent;
+            if( modApi != null )
+            {
+                modApi.Application.GameEntered -= OnGameEntered;
+                modApi.Application.ChatMessageSent -= OnChatMessageSent;
 
-            updatePointsAndTimestamp();
+                updatePointsAndTimestamp(modApi.Application.LocalPlayer.Id);
 
-            modApi.Log("PlaytimeRewardsShop mod shutdown");
+                modApi.Log("PlaytimeRewardsShop mod shutdown");
+
+                modApi = null;
+            }
         }
 
         private void readConfiguration()
@@ -145,17 +163,14 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             }
         }
 
-        private void readPlayerData()
+        private PlayerData readPlayerData(int playerID)
         {
-            string playerDataFilePath = Path.Combine(saveGameModPath, playerDataFileName);
+            PlayerData playerData = null;
+            string playerDataFilePath = Path.Combine(saveGameModPath, string.Format(playerDataFileName, playerID));
 
             if (!File.Exists(playerDataFilePath))
             {
-                playerData = new PlayerData()
-                {
-                    Points = 0,
-                    loginTimestamp = DateTime.Now
-                };
+                playerData = new PlayerData(); // 0 points and current date time
             }
             else
             {
@@ -164,14 +179,31 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                     JsonSerializer serializer = new JsonSerializer();
                     serializer.Converters.Add(new JavaScriptDateTimeConverter());
                     serializer.NullValueHandling = NullValueHandling.Ignore;
-                    this.playerData = (PlayerData)serializer.Deserialize(playerDataFile, typeof(PlayerData));
+                    playerData = (PlayerData)serializer.Deserialize(playerDataFile, typeof(PlayerData));
+
+                    // if file does not match the pattern -> create a new file
+                    playerData = new PlayerData(); // 0 points and current date time
                 }
+            }
+
+            return playerData;
+        }
+
+        private void savePlayerData(int playerID, PlayerData playerData)
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Converters.Add(new JavaScriptDateTimeConverter());
+            serializer.NullValueHandling = NullValueHandling.Ignore;
+            using (StreamWriter file = File.CreateText(Path.Combine(saveGameModPath, string.Format(playerDataFileName, playerID))))
+            {
+                serializer.Serialize(file, playerData);
             }
         }
 
         void OnGameEntered(bool entered)
         {
-            updateLoginTimestamp();
+            // only called in single player
+            updateLoginTimestamp(modApi.Application.LocalPlayer.Id);
         }
 
         void OnChatMessageSent(MessageData data)
@@ -191,7 +223,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                     // if player wrote a command in the faction or server, we react
                     parseCommand(data);
                 }
-
             }
         }
 
@@ -221,53 +252,49 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         {
             if (args != null && args.Count > 0)
             {
-                modApi.GUI.ShowGameMessage($"Demo mod console cmd execution: first arg = {args[0]}", prio: 1);
+                showIngameMessage(modApi.Application.LocalPlayer.Id, $"Demo mod console cmd execution: first arg = {args[0]}");
             }
             else
             {
-                modApi.GUI.ShowGameMessage("Demo mod console cmd execution: no arguments", prio: 1);
+                showIngameMessage(modApi.Application.LocalPlayer.Id, "Demo mod console cmd execution: no arguments");
             }
         }
 
-        private void updateLoginTimestamp()
+        private void updateLoginTimestamp(int playerID)
         {
-            this.playerData.loginTimestamp = DateTime.Now;
-            JsonSerializer serializer = new JsonSerializer();
-            serializer.Converters.Add(new JavaScriptDateTimeConverter());
-            serializer.NullValueHandling = NullValueHandling.Ignore;
-            using (StreamWriter file = File.CreateText(Path.Combine(saveGameModPath, playerDataFileName)))
-            {
-                serializer.Serialize(file, this.playerData);
-            }
+            // read or create the player data
+            PlayerData playerData = readPlayerData(playerID);
+
+            playerData.loginTimestamp = DateTime.Now;
+
+            savePlayerData(playerID, playerData);
         }
 
-        private void updatePointsAndTimestamp()
+        private int updatePointsAndTimestamp(int playerID)
         {
+            // read or create the player data
+            PlayerData playerData = readPlayerData(playerID);
+
             // calculate the points
-            TimeSpan timeDiff = DateTime.Now - this.playerData.loginTimestamp;
+            TimeSpan timeDiff = DateTime.Now - playerData.loginTimestamp;
+
             //timeDiff = timeDiff.Add(new TimeSpan(0,25,0));
             if (timeDiff.TotalSeconds > this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0))
             {
-                this.playerData.Points += Convert.ToInt32(timeDiff.TotalSeconds * this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0));
+                playerData.Points += Convert.ToInt32(timeDiff.TotalSeconds * this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0));
 
                 // update the timestamp
-                this.playerData.loginTimestamp = DateTime.Now;
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Converters.Add(new JavaScriptDateTimeConverter());
-                serializer.NullValueHandling = NullValueHandling.Ignore;
+                playerData.loginTimestamp = DateTime.Now;
 
-                using (StreamWriter sw = new StreamWriter(Path.Combine(saveGameModPath, playerDataFileName)))
-                using (JsonWriter writer = new JsonTextWriter(sw))
-                {
-                    serializer.Serialize(writer, this.playerData);
-                }
+                savePlayerData(playerID, playerData);
             }
+
+            return playerData.Points;
         }
 
         private void parseCommand(MessageData chatInfo)
         {
-            if (modApi.GUI == null || !modApi.GUI.IsWorldVisible)
-                return;
+            int playerID = chatInfo.SenderEntityId;
 
             string commandText = chatInfo.Text;
 
@@ -303,34 +330,40 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                 dialogConfig.TitleText = "Playtime Shop";
                 dialogConfig.BodyText = helpText;
 
-                modApi.GUI.ShowDialog(dialogConfig, null, 0);
+                if(!modApi.Application.ShowDialogBox(playerID, dialogConfig, null, 0) && 
+                    modApi.Application.Mode == ApplicationMode.SinglePlayer)
+                {
+                    modApi.Log("Show client dialog box");
+                    modApi.GUI.ShowDialog(dialogConfig, null, 0);
+                }                                                      
             }
             else if (commandSplit[1].ToLower().StartsWith("points"))
             {
-                updatePointsAndTimestamp();
+                int points = updatePointsAndTimestamp(playerID);
 
-                modApi.GUI.ShowGameMessage($"You have {this.playerData.Points} points", prio: 1);
+                showIngameMessage(playerID, $"You have {points} points");
             }
             else if (commandSplit[1].ToLower().StartsWith("buy"))
             {
                 if (commandSplit.Length < 3)
                     return;
 
-                updatePointsAndTimestamp();
+                int points = updatePointsAndTimestamp(playerID);
 
                 foreach (ShopItem item in this.configuration.RewardItems)
                 {
                     if (commandSplit[2].ToLower().StartsWith(item.Name))
                     {
                         // check if the player has enough points
-                        if(this.playerData.Points < item.price)
-                            modApi.GUI.ShowGameMessage($"You don't have enough {this.playerData.Points} points to buy the item for {item.price} points", prio: 1);
+                        if(points < item.price)
+                        {
+                            showIngameMessage(playerID, $"You don't have enough {points} points to buy the item for {item.price} points");
+                        }
                         else
                         {
-                            buyItem(chatInfo, item);
+                            buyItem(playerID, item);
                             return; // item found in the list and transferred
-                        }
-                            
+                        }                            
                     }
                 }
 
@@ -340,30 +373,50 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                     if (commandSplit[2].ToLower().StartsWith(stat.Name))
                     {
                         // check if the player has enough points
-                        if (this.playerData.Points < stat.price)
-                            modApi.GUI.ShowGameMessage($"You don't have enough {this.playerData.Points} points to buy the item for {stat.price} points", prio: 1);
+                        if (points < stat.price)
+                        {
+                            showIngameMessage(playerID, $"You don't have enough {points} points to buy the item for {stat.price} points");
+                        }
                         else
                         {
-                            buyStat(chatInfo, stat);
+                            buyStat(playerID, stat);
                             return; // stat found in the list and transferred
                         }
-
                     }
                 }
             }
         }
 
-        private void buyItem(MessageData chatInfo, ShopItem item)
+        private void showIngameMessage(int playerID, string message)
+        {
+            if (message == null)
+                return;
+
+            if (modApi.Application.Mode == ApplicationMode.SinglePlayer)
+                modApi.GUI.ShowGameMessage(message, prio: 1);
+            else
+            {
+                // at the moment i don't know how to send the messages on dedicated servers
+                DialogConfig dialogConfig = new DialogConfig();
+                dialogConfig.ButtonTexts = new string[] { "close" };
+                dialogConfig.TitleText = "Playtime Shop";
+                dialogConfig.BodyText = message;
+
+                modApi.Application.ShowDialogBox(playerID, dialogConfig, null, 0);
+            }
+        }
+
+        private bool buyItem(int playerID, ShopItem item)
         {
             try
             {
-                modApi.Log($"Try to transfer item {item.Name} to player {chatInfo.SenderEntityId} or {modApi.Application.LocalPlayer.Id}");
+                modApi.Log($"Try to transfer item {item.Name} to player {playerID}");
 
                 ItemExchangeInfo giveReward = new ItemExchangeInfo()
                 {
                     buttonText = "close",
                     desc = "Transfer the items into your inventory",
-                    id = chatInfo.SenderEntityId,
+                    id = playerID,
                     items = (new ItemStack[] { new ItemStack(item.itemId, item.quantity) }),//.Concat(new ItemStack[7 * 7]).Take(7 * 7).ToArray(),
                     title = "Playtime Shop"
                 };
@@ -372,25 +425,33 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                 {
                     modApi.Log($"Try to transfer item over legacy mod");
 
-                    buyItemLegacy(chatInfo.SenderEntityId, giveReward);
+                    if(buyItemLegacy(playerID, giveReward))
+                    {
+                        // remove the player points
+                        PlayerData playerData = readPlayerData(playerID);
+                        playerData.Points -= item.price;
+                        savePlayerData(playerID, playerData);
 
-                    // remove the points
-                    this.playerData.Points -= item.price;                    
+                        return true;
+                    }                 
                 }
                 else if (null != gameApi)
                 {
-                    if (gameApi.Game_Request(CmdId.Request_Player_ItemExchange, requestNr, giveReward))
+                    if (gameApi.Game_Request(CmdId.Request_Player_ItemExchange, requestNr++, giveReward))
                     {
                         modApi.Log($"Item successfully transferred");
 
-                        // remove the points
-                        this.playerData.Points -= item.price;
+                        // remove the player points
+                        PlayerData playerData = readPlayerData(playerID);
+                        playerData.Points -= item.price;
+                        savePlayerData(playerID, playerData);
+
+                        return true;
                     }
                     else
                     {
                         modApi.Log($"Gameapi request failed");
                     }
-                    requestNr++;
                 }
                 else
                 {
@@ -400,13 +461,14 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             catch (Exception error)
             {
                 modApi.Log($"Buy item failed :{error}");
+                return false;
             }
+
+            return false;
         }
 
-        private void buyItemLegacy(int playerID, ItemExchangeInfo giveReward)
+        private bool buyItemLegacy(int playerID, ItemExchangeInfo giveReward)
         {
-            var P = DediLegacyMod?.Request_Player_Info(new Id(playerID)).GetAwaiter().GetResult();
-
             try
             {
                 DediLegacyMod?.Request_Player_ItemExchange(Timeouts.NoResponse, giveReward).GetAwaiter().GetResult();
@@ -414,22 +476,68 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             catch (Exception error)
             {
                 modApi.Log($"transfer items failed for player {playerID} :{error}");
-                modApi.GUI.ShowGameMessage($"Item transfer failed {error}", prio: 1);
+                showIngameMessage(playerID, $"Item transfer failed {error}");
+
+                return false;
             }
+
+            return true;
         }
 
-        private void buyStat(MessageData chatInfo, ShopStat stat)
+        private void buyStat(int playerID, ShopStat stat)
         {
             try
             {
-                modApi.Log($"Try to add stat {stat.Name} to player {chatInfo.SenderEntityId} or {modApi.Application.LocalPlayer.Id}");
+                modApi.Log($"Try to add stat {stat.quantity} {stat.Name} to player {playerID}");
 
-                if (stat.Name.StartsWith("life"))
+                if(null != DediLegacyMod)
                 {
-                    // check if the max stat is already reached
-                    if (modApi.Application.LocalPlayer.HealthMax + stat.quantity > stat.maxStat)
-                        modApi.GUI.ShowGameMessage($"Maximum {stat.maxStat} {stat.Description} are allowed", prio: 1);
-                }                
+                    PlayerInfo P = DediLegacyMod?.Request_Player_Info(new Id(playerID)).GetAwaiter().GetResult();
+
+                    if (P.entityId != playerID)
+                    {
+                        modApi.Log($"Player ID from request player info {P.entityId} is different from the chat info {playerID}");
+                        return;
+                    }
+
+                    PlayerInfoSet playerInfoSet = new PlayerInfoSet()
+                    {
+                        entityId = P.entityId
+                    };
+
+                    if (stat.Name.StartsWith("life"))
+                    {
+                        // check if the max stat is already reached
+                        if (P.healthMax + stat.quantity > stat.maxStat)
+                        {
+                            showIngameMessage(playerID, $"Maximum {stat.maxStat} {stat.Description} are allowed");
+                            return;
+                        }
+
+                        // We are aware that the API provides the maximum health that can currently be increased through food.
+                        // How can we tell if maximum health has been temporarily increased by buffs/food?
+                        playerInfoSet.healthMax += stat.quantity;
+                    }
+                    else if (stat.Name.Contains("xp"))
+                    {
+                        // check if the max stat is already reached
+                        if (P.exp + stat.quantity > stat.maxStat)
+                        {
+                            showIngameMessage(playerID, $"Maximum {stat.maxStat} {stat.Description} are allowed");
+                            return;
+                        }
+
+                        playerInfoSet.experiencePoints += stat.quantity;
+                    }
+
+                    modApi.Log($"Try to update the player stats with id {playerInfoSet.entityId}");
+
+                    DediLegacyMod?.Request_Player_SetPlayerInfo(playerInfoSet).GetAwaiter().GetResult();
+                }
+                else
+                {
+                    modApi.Log($"Gameapi is not initialized");
+                }
             }
             catch (Exception error)
             {
@@ -479,8 +587,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                 Shutdown();
             }
             catch (Exception error) { modApi?.Log($"Game_Exit: detach events: {error}"); }
-
-            modApi?.Log("PlaytimeRewardShop Mod exited:Game_Exit finished");
         }
 
         public void Game_Event(CmdId eventId, ushort seqNr, object data)
@@ -488,7 +594,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             modApi?.Log($"PlaytimeRewardShop Mod: Game_Event {eventId} {seqNr} {data}");
             DediLegacyMod?.Game_Event(eventId, seqNr, data);
         }
-
 
         // ----- IDispose Interface methods -----------------------------------------
         public void Dispose()
