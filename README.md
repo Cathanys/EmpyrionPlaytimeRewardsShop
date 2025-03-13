@@ -24,8 +24,12 @@ For each item you want to add to the shop, add an entry in the RewardItems secti
 	"RewardPointsPerPeriod":10,
 	"RewardItems":
 	[
-		{"Name":"neo","Description":"Neodynium Ore","itemId":4300,"quantity":100,"price":100},
-		{"Name":"sath","Description":"Sathium Ore","itemId":4332,"quantity":100,"price":100}
+		{"Name":"neo","Description":"Neodynium Ore","quantity":100,"price":100,"itemId":4300},
+		{"Name":"sath","Description":"Sathium Ore","quantity":100,"price":100,"itemId":4332}
+	],
+	"RewardStats":
+	[
+		{"Name":"life","Description":"Health","quantity":100,"price":100,"maxStat":2000}
 	]
 }
 ```
