@@ -7,7 +7,7 @@ Thanks for all the support from the Empyrion Discord 💜
 
 ## Installation
 
-**Don't use it. I have not tested it. It will crash with 99% chance.**
+**Don't use it. It is under development and not finished. It will crash with 99% chance.**
 For Server copy the content of the EmpyrionPlayerRewardsShop ZIP into the folder Content\Mods\
 For Single Player mode copy the content of the EmpyrionPlayerRewardsShop_Client ZIP into the folder Content\Mods\
 
@@ -15,7 +15,7 @@ For Single Player mode copy the content of the EmpyrionPlayerRewardsShop_Client 
 After starting the server or game with the mod in the correct folder, the configuration will be created here:
 \[SaveGamePath\]\\Mods\\EmpyrionPlaytimeRewardsShop\\Configuration.json
 
-For each item you want to add to the shop, add an entry in the rweards sections section.
+For each item you want to add to the shop, add an entry in the rewards sections.
 
 ```json
 {
