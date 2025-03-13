@@ -1,7 +1,5 @@
 ﻿using Eleon;
 using Eleon.Modding;
-using EmpyrionNetAPIAccess;
-using EmpyrionNetAPIDefinitions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -452,20 +450,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                     }
 
                 }
-                else if (null != DediLegacyMod)
-                {
-                    modApi.Log($"Try to transfer item over legacy mod");
-
-                    if (buyItemLegacy(playerID, giveReward))
-                    {
-                        // remove the player points
-                        PlayerData playerData = readPlayerData(playerID);
-                        playerData.Points -= item.price;
-                        savePlayerData(playerID, playerData);
-
-                        return true;
-                    }
-                }
                 else
                 {
                     modApi.Log($"Gameapi is not initialized");
@@ -480,22 +464,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             return false;
         }
 
-        private bool buyItemLegacy(int playerID, ItemExchangeInfo giveReward)
-        {
-            try
-            {
-                DediLegacyMod?.Request_Player_ItemExchange(giveReward).GetAwaiter().GetResult();
-            }
-            catch (Exception error)
-            {
-                modApi.Log($"transfer items failed for player {playerID} :{error}");
-                showIngameMessage(playerID, $"Item transfer failed {error}");
-
-                return false;
-            }
-
-            return true;
-        }
 
         private void buyStat(int playerID, ShopStat stat)
         {
@@ -518,7 +486,7 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                         {
                             // We are aware that the API provides the maximum health that can currently be increased through food.
                             // How can we tell if maximum health has been temporarily increased by buffs/food?
-                            playerInfoSet.healthMax = 500 + stat.quantity;
+                            playerInfoSet.healthMax = 600 + stat.quantity;
                         }
 
                         modApi.Log($"Try to update the player stats with id {playerInfoSet.entityId}");
@@ -535,50 +503,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                     }
                     else
                         modApi.Log($"Getting the player info did not work for player {playerID}");
-                }
-                else if(null != DediLegacyMod)
-                {
-                    PlayerInfo P = DediLegacyMod?.Request_Player_Info(new Id(playerID)).GetAwaiter().GetResult();
-
-                    if (P.entityId != playerID)
-                    {
-                        modApi.Log($"Player ID from request player info {P.entityId} is different from the chat info {playerID}");
-                        return;
-                    }
-
-                    PlayerInfoSet playerInfoSet = new PlayerInfoSet()
-                    {
-                        entityId = P.entityId
-                    };
-
-                    if (stat.Name.StartsWith("life"))
-                    {
-                        // check if the max stat is already reached
-                        if (P.healthMax + stat.quantity > stat.maxStat)
-                        {
-                            showIngameMessage(playerID, $"Maximum {stat.maxStat} {stat.Description} are allowed");
-                            return;
-                        }
-
-                        // We are aware that the API provides the maximum health that can currently be increased through food.
-                        // How can we tell if maximum health has been temporarily increased by buffs/food?
-                        playerInfoSet.healthMax += stat.quantity;
-                    }
-                    else if (stat.Name.Contains("xp"))
-                    {
-                        // check if the max stat is already reached
-                        if (P.exp + stat.quantity > stat.maxStat)
-                        {
-                            showIngameMessage(playerID, $"Maximum {stat.maxStat} {stat.Description} are allowed");
-                            return;
-                        }
-
-                        playerInfoSet.experiencePoints += stat.quantity;
-                    }
-
-                    modApi.Log($"Try to update the player stats with id {playerInfoSet.entityId}");
-
-                    DediLegacyMod?.Request_Player_SetPlayerInfo(playerInfoSet).GetAwaiter().GetResult();
                 }
                 else
                 {
@@ -597,13 +521,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         /// </summary>
         ModGameAPI gameApi = null;
 
-        public class DediLegacyModBase : EmpyrionModBase
-        {
-            public override void Initialize(ModGameAPI dediAPI) { }
-        }
-
-        public DediLegacyModBase DediLegacyMod { get; set; } = null;
-
         /// <summary>
         /// Called once early when the host process starts - treat this like a constructor for your mod
         /// </summary>
@@ -612,21 +529,16 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         {
             gameApi = legacyModApi;
             gameApi?.Console_Write("PlaytimeRewardShop legacy mod started: Game_Start");
-
-            DediLegacyMod = new DediLegacyModBase();
-            DediLegacyMod?.Game_Start(legacyModApi);
         }
 
         public void Game_Update()
         {
-            DediLegacyMod?.Game_Update();
+
         }
 
         public void Game_Exit()
         {
             modApi?.Log("PlaytimeRewardShop Mod exited:Game_Exit");
-
-            DediLegacyMod?.Game_Exit();
 
             try
             {
@@ -638,7 +550,6 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         public void Game_Event(CmdId eventId, ushort seqNr, object data)
         {
             modApi?.Log($"PlaytimeRewardShop Mod: Game_Event {eventId} {seqNr} {data}");
-            DediLegacyMod?.Game_Event(eventId, seqNr, data);
 
             switch (eventId)
             {
