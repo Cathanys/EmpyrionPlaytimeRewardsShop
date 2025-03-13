@@ -4,4 +4,4 @@ Author: Cathanys
 Version: 0.0.1
 Website: https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop
 
-ModTargets: PfServer,Dedi,Client
+ModTargets: Dedi,Client

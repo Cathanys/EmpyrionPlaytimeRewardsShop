@@ -70,7 +70,7 @@
   <ItemGroup>
     <Compile Include="PlayerData.cs" />
     <Compile Include="PlaytimeRewardsShopConfiguration.cs" />
-    <Compile Include="PlaytimeRewardsShop_Client.cs" />
+    <Compile Include="EmpyrionPlaytimeRewardsShop_Client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

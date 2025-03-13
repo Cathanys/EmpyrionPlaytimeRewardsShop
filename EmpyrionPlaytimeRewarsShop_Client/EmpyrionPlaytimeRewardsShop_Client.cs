@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace EmpyrionPlaytimeRewardsShop_Client
 {
     // Class implementing the new IMod interface as the legacy modding is not available on client side
-    public class PlaytimeRewardsShop_Client : IMod, ModInterface, IDisposable
+    public class EmpyrionPlaytimeRewardsShop_Client : IMod, ModInterface, IDisposable
     {
         /// <summary>
         /// reference to the mod api 2
@@ -41,9 +41,9 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         private const string configFileName = "Configuration.json";
 
         /// <summary>
-        /// template name of the player data file
+        /// template name of the player data file. Use the {0} as placeholder for the player ID
         /// </summary>
-        private string playerDataFileName = $"PlayerData{0}.json";
+        private string playerDataFileName = "PlayerData_{0}.json";
 
         // ----- IMod methods -------------------------------------------------
 
@@ -60,14 +60,20 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             // dedicated server
             if (modApi.Application.Mode == ApplicationMode.DedicatedServer)
             {
-                try
-                {
-                    modApi.Network.RegisterReceiverForClientPackets(ClientPacketsCallback);
-                }
-                catch (Exception error)
-                {
-                    modApi.Log($"RegisterReceiverForClientPackets failed: {error}");
-                }
+                //try
+                //{
+                //    modApi.Network.RegisterReceiverForClientPackets(ClientPacketsCallback);
+                //}
+                //catch (Exception error)
+                //{
+                //    modApi.Log($"RegisterReceiverForClientPackets failed: {error}");
+                //}
+
+                // get informed if game has been entered or left
+                modApi.Application.GameEntered += OnGameEntered;
+
+                // get informed if a player has sent a chat message
+                modApi.Application.ChatMessageSent += OnChatMessageSent;
             }
             // single player
             else
@@ -168,9 +174,12 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             PlayerData playerData = null;
             string playerDataFilePath = Path.Combine(saveGameModPath, string.Format(playerDataFileName, playerID));
 
+            modApi.Log($"playerDataFilePath {playerDataFilePath} for player {playerID}");
+
             if (!File.Exists(playerDataFilePath))
             {
                 playerData = new PlayerData(); // 0 points and current date time
+                savePlayerData(playerID, playerData);
             }
             else
             {
@@ -179,12 +188,26 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                     JsonSerializer serializer = new JsonSerializer();
                     serializer.Converters.Add(new JavaScriptDateTimeConverter());
                     serializer.NullValueHandling = NullValueHandling.Ignore;
-                    playerData = (PlayerData)serializer.Deserialize(playerDataFile, typeof(PlayerData));
 
-                    // if file does not match the pattern -> create a new file
-                    playerData = new PlayerData(); // 0 points and current date time
+                    try
+                    {
+                        playerData = (PlayerData)serializer.Deserialize(playerDataFile, typeof(PlayerData));
+                    }
+                    catch (Exception error)
+                    {
+                        modApi.Log($"Deserialize Player Data returned error {error}");
+                    }
+                    finally 
+                    {
+                        // if file does not match the pattern -> create a new file
+                        if (playerData == null)
+                        {
+                            playerData = new PlayerData(); // 0 points and current date time
+                            savePlayerData(playerID, playerData);
+                        }
+                    }
                 }
-            }
+            }            
 
             return playerData;
         }
@@ -202,6 +225,8 @@ namespace EmpyrionPlaytimeRewardsShop_Client
 
         void OnGameEntered(bool entered)
         {
+            modApi.Log($"OnGameEntered");
+
             // only called in single player
             updateLoginTimestamp(modApi.Application.LocalPlayer.Id);
         }
@@ -262,6 +287,8 @@ namespace EmpyrionPlaytimeRewardsShop_Client
 
         private void updateLoginTimestamp(int playerID)
         {
+            modApi.Log($"updateLoginTimestamp {playerID}");
+
             // read or create the player data
             PlayerData playerData = readPlayerData(playerID);
 
@@ -549,14 +576,14 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         /// <summary>
         /// reference to the legacy mod api 1
         /// </summary>
-        internal static ModGameAPI gameApi;
+        ModGameAPI gameApi = null;
 
         public class DediLegacyModBase : EmpyrionModBase
         {
             public override void Initialize(ModGameAPI dediAPI) { }
         }
 
-        public DediLegacyModBase DediLegacyMod { get; set; }
+        public DediLegacyModBase DediLegacyMod { get; set; } = null;
 
         /// <summary>
         /// Called once early when the host process starts - treat this like a constructor for your mod
@@ -565,7 +592,9 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         public void Game_Start(ModGameAPI legacyModApi)
         {
             gameApi = legacyModApi;
-            gameApi?.Console_Write("PlaytimeRewardShop Mod started: Game_Start");
+            gameApi?.Console_Write("PlaytimeRewardShop legacy mod started: Game_Start");
+
+            modApi?.Log("PlaytimeRewardShop modApi started: Game_Start");
 
             DediLegacyMod = new DediLegacyModBase();
             DediLegacyMod?.Game_Start(legacyModApi);
