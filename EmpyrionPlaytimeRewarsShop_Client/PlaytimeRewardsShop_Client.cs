@@ -372,7 +372,7 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                 {
                     modApi.Log($"Try to transfer item over legacy mod");
 
-                    _ = buyItemLegacy(chatInfo.SenderEntityId, giveReward);
+                    buyItemLegacy(chatInfo.SenderEntityId, giveReward);
 
                     // remove the points
                     this.playerData.Points -= item.price;                    
@@ -403,13 +403,13 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             }
         }
 
-        private async Task buyItemLegacy(int playerID, ItemExchangeInfo giveReward)
+        private void buyItemLegacy(int playerID, ItemExchangeInfo giveReward)
         {
-            var P = await DediLegacyMod?.Request_Player_Info(new Id(playerID));
+            var P = DediLegacyMod?.Request_Player_Info(new Id(playerID)).GetAwaiter().GetResult();
 
             try
             {
-                await DediLegacyMod?.Request_Player_ItemExchange(Timeouts.NoResponse, giveReward);
+                DediLegacyMod?.Request_Player_ItemExchange(Timeouts.NoResponse, giveReward).GetAwaiter().GetResult();
             }
             catch (Exception error)
             {
@@ -460,7 +460,7 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             gameApi?.Console_Write("PlaytimeRewardShop Mod started: Game_Start");
 
             DediLegacyMod = new DediLegacyModBase();
-            DediLegacyMod?.Game_Start(gameApi);
+            DediLegacyMod?.Game_Start(legacyModApi);
         }
 
         public void Game_Update()
@@ -480,12 +480,12 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             }
             catch (Exception error) { modApi?.Log($"Game_Exit: detach events: {error}"); }
 
-            modApi?.Log("Mod exited:Game_Exit finished");
+            modApi?.Log("PlaytimeRewardShop Mod exited:Game_Exit finished");
         }
 
         public void Game_Event(CmdId eventId, ushort seqNr, object data)
         {
-            modApi?.Log($"EmpyrionScripting Mod: Game_Event {eventId} {seqNr} {data}");
+            modApi?.Log($"PlaytimeRewardShop Mod: Game_Event {eventId} {seqNr} {data}");
             DediLegacyMod?.Game_Event(eventId, seqNr, data);
         }
 
@@ -493,7 +493,7 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         // ----- IDispose Interface methods -----------------------------------------
         public void Dispose()
         {
-            modApi?.Log("EmpyrionScripting Mod: Dispose");
+            modApi?.Log("PlaytimeRewardShop Mod: Dispose");
         }
     }
 }
