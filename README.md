@@ -15,7 +15,7 @@ For Single Player mode copy the content of the EmpyrionPlayerRewardsShop_Client 
 After starting the server or game with the mod in the correct folder, the configuration will be created here:
 \[SaveGamePath\]\\Mods\\EmpyrionPlaytimeRewardsShop\\Configuration.json
 
-For each item you want to add to the shop, add an entry in the RewardItems section.
+For each item you want to add to the shop, add an entry in the rweards sections section.
 
 ```json
 {
