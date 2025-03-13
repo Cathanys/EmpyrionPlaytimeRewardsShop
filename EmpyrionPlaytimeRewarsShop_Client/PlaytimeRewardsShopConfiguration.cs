@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace EmpyrionPlaytimeRewarsShop_Client
+namespace EmpyrionPlaytimeRewardsShop_Client
 {
     public class PlaytimeRewardsShopConfiguration
     {

@@ -8,8 +8,8 @@
     <ProjectGuid>{50ABB75D-E199-41CD-97CC-97C64700B4F1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EmpyrionPlaytimeRewarsShop_Client</RootNamespace>
-    <AssemblyName>EmpyrionPlaytimeRewarsShop_Client</AssemblyName>
+    <RootNamespace>EmpyrionPlaytimeRewardsShop_Client</RootNamespace>
+    <AssemblyName>EmpyrionPlaytimeRewardsShop_Client</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

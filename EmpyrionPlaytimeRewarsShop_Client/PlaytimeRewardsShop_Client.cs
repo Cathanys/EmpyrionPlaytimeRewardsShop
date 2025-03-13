@@ -10,7 +10,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EmpyrionPlaytimeRewarsShop_Client
+namespace EmpyrionPlaytimeRewardsShop_Client
 {
     // Class implementing the new IMod interface as the legacy modding is not available on client side
     public class PlaytimeRewardsShop_Client : IMod, ModInterface, IDisposable
