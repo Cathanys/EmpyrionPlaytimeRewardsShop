@@ -19,8 +19,8 @@ For each item you want to add to the shop, add an entry in the item rewards sect
 The item ids are the "Game ID" from the database: https://empyrionbuddy.com (with the correct Scenario activated in their settings)
 
 Currently these stats are implemented:
-"life" - increases the maximum health
-"exp" - increases the players experience points
+- "life" - increases the maximum health
+- "exp" - increases the players experience points
 
 ```json
 {
