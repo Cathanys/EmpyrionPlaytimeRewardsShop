@@ -136,6 +136,16 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                 };
                 this.configuration.RewardStats.Add(newStat);
 
+                ShopStat newStat2 = new ShopStat()
+                {
+                    Name = "exp",
+                    Description = "Experience",
+                    price = 100,
+                    quantity = 1000,
+                    maxStat = 500000
+                };
+                this.configuration.RewardStats.Add(newStat);
+
                 File.WriteAllText(configFilePath, JsonConvert.SerializeObject(this.configuration));
             }
             else
