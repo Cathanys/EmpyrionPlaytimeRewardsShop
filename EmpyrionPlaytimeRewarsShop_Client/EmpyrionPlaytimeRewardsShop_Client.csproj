@@ -53,6 +53,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EventItem.cs" />
     <Compile Include="PlayerData.cs" />
     <Compile Include="PlaytimeRewardsShopConfiguration.cs" />
     <Compile Include="EmpyrionPlaytimeRewardsShop_Client.cs" />

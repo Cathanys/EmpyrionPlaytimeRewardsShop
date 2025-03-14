@@ -5,13 +5,14 @@ using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace EmpyrionPlaytimeRewardsShop_Client
 {
     // Class implementing the new IMod interface as the legacy modding is not available on client side
-    public class EmpyrionPlaytimeRewardsShop_Client : IMod, ModInterface, IDisposable
+    public class EmpyrionPlaytimeRewardsShop_Client : IMod, ModInterface
     {
         /// <summary>
         /// reference to the mod api 2
@@ -20,8 +21,9 @@ namespace EmpyrionPlaytimeRewardsShop_Client
 
         /// <summary>
         /// increase the number with each request, starting with non zero
+        /// will be incrememted before use
         /// </summary>
-        private ushort requestNr = 1;
+        private ushort requestNr = 0;
 
         /// <summary>
         /// string to the folder with the configurations
@@ -43,6 +45,11 @@ namespace EmpyrionPlaytimeRewardsShop_Client
         /// </summary>
         private string playerDataFileName = "PlayerData_{0}.json";
 
+        /// <summary>
+        /// store the requested command in this list to identify the corresponding event
+        /// </summary>
+        private List<EventItem> commandList = new List<EventItem> ();
+
         // ----- IMod methods -------------------------------------------------
 
         /// <summary>
@@ -55,7 +62,7 @@ namespace EmpyrionPlaytimeRewardsShop_Client
 
             modApi.Log("PlaytimeRewardsShop initialized");
 
-            // get informed if game has been entered or left
+            // get informed if game has been entered or left ( only single player)
             modApi.Application.GameEntered += OnGameEntered;
 
             // get informed if a player has sent a chat message
@@ -211,50 +218,8 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             // if player wrote a 'echo' message to the server then we respond
             if (data.Channel == Eleon.MsgChannel.Server || data.Channel == Eleon.MsgChannel.Faction)
             {
-                if(data.Channel == Eleon.MsgChannel.Server && data.Text == "echo")
-                {
-                    AnswerAsync();
-                    modApi.Log("Triggered answer...");
-                }
-                else
-                {
-                    // if player wrote a command in the faction or server, we react
-                    parseCommand(data);
-                }
-            }
-        }
-
-        async void AnswerAsync()
-        {
-            await DelayAsync();
-
-            // Note: Here we are again in the main thread - which is required for communication with the game
-
-            var chatMsg = new MessageData()
-            {
-                SenderType = Eleon.SenderType.ServerInfo,
-                Channel = Eleon.MsgChannel.Server,
-                Text = "This is the echo from the Mod"
-            };
-
-            modApi.Application.SendChatMessage(chatMsg);
-        }
-
-        Task DelayAsync()
-        {
-            return Task.Factory.StartNew(() => Thread.Sleep(1000)); // sleep in another thread
-        }
-
-        // Optional method to be executed via the "mod" console command
-        public void ExecCommand(List<string> args)
-        {
-            if (args != null && args.Count > 0)
-            {
-                showIngameMessage(modApi.Application.LocalPlayer.Id, $"Demo mod console cmd execution: first arg = {args[0]}");
-            }
-            else
-            {
-                showIngameMessage(modApi.Application.LocalPlayer.Id, "Demo mod console cmd execution: no arguments");
+                 // if player wrote a command in the faction or server, we react
+                 parseCommand(data);                
             }
         }
 
@@ -276,12 +241,15 @@ namespace EmpyrionPlaytimeRewardsShop_Client
             PlayerData playerData = readPlayerData(playerID);
 
             // calculate the points
-            TimeSpan timeDiff = DateTime.Now - playerData.loginTimestamp;
+            //TimeSpan timeDiff = DateTime.Now - playerData.loginTimestamp;
+            TimeSpan timeDiff = DateTime.Now.Subtract(playerData.loginTimestamp);
 
-            //timeDiff = timeDiff.Add(new TimeSpan(0,25,0));
-            if (timeDiff.TotalSeconds > this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0))
+            if (timeDiff.TotalMinutes > this.configuration.RewardPeriodInMinutes)
             {
-                playerData.Points += Convert.ToInt32(timeDiff.TotalSeconds * this.configuration.RewardPointsPerPeriod / (this.configuration.RewardPeriodInMinutes * 60.0));
+                int addPoints = Convert.ToInt32((timeDiff.TotalMinutes * (double)this.configuration.RewardPointsPerPeriod) / (double)this.configuration.RewardPeriodInMinutes);
+                playerData.Points += addPoints;
+
+                modApi.Log($"{addPoints} points added to player {playerID} with {timeDiff.TotalMinutes} minutes new playtime");
 
                 // update the timestamp
                 playerData.loginTimestamp = DateTime.Now;
@@ -428,7 +396,7 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                     try
                     {
 
-                        if (gameApi.Game_Request(CmdId.Request_Player_ItemExchange, requestNr++, giveReward))
+                        if (gameApi.Game_Request(CmdId.Request_Player_ItemExchange, ++requestNr, giveReward))
                         {
                             modApi.Log($"Item successfully transferred");
 
@@ -473,33 +441,20 @@ namespace EmpyrionPlaytimeRewardsShop_Client
 
                 if (null != gameApi)
                 {
-                    modApi.Log($"Try to increase stat over game api");
+                    modApi.Log($"Try to get player info over game api");
 
-                    if (gameApi.Game_Request(CmdId.Request_Player_Info, requestNr++, new Id(playerID)))
+                    if (gameApi.Game_Request(CmdId.Request_Player_Info, ++requestNr, new Id(playerID)))
                     {
-                        PlayerInfoSet playerInfoSet = new PlayerInfoSet()
+                        // we are done here and wait for the response in Game_Event
+                        EventItem eventItem = new EventItem()
                         {
-                            entityId = playerID
+                            Nr          = requestNr,
+                            PlayerId    = playerID,
+                            CommandID   = CmdId.Request_Player_Info,
+                            Stat        = stat
                         };
 
-                        if (stat.Name.StartsWith("life"))
-                        {
-                            // We are aware that the API provides the maximum health that can currently be increased through food.
-                            // How can we tell if maximum health has been temporarily increased by buffs/food?
-                            playerInfoSet.healthMax = 600 + stat.quantity;
-                        }
-
-                        modApi.Log($"Try to update the player stats with id {playerInfoSet.entityId}");
-
-                        if (gameApi.Game_Request(CmdId.Request_Player_SetPlayerInfo, requestNr++, playerInfoSet))
-                        {
-                            // remove the player points
-                            PlayerData playerData = readPlayerData(playerID);
-                            playerData.Points -= stat.price;
-                            savePlayerData(playerID, playerData);
-                        }
-                        else
-                            modApi.Log($"Set player info did not work for player {playerInfoSet.entityId}");
+                        commandList.Add( eventItem );
                     }
                     else
                         modApi.Log($"Getting the player info did not work for player {playerID}");
@@ -569,13 +524,79 @@ namespace EmpyrionPlaytimeRewardsShop_Client
                             updatePointsAndTimestamp(playerID.id);
                     }
                     break;
+
+                case CmdId.Event_Player_Info:
+                    if(data is PlayerInfo)
+                    {
+                        PlayerInfo playerInfo = data as PlayerInfo;
+
+                        //search for our event
+                        foreach (EventItem item in commandList)
+                        {
+                            if( item.PlayerId == playerInfo.entityId &&
+                                item.Nr == seqNr)
+                            {
+                                updateStatLegacy(item.PlayerId, playerInfo, item.Stat);
+
+                                // remove the event from the list
+                                commandList.Remove(item);
+                                break;
+                            }
+                        }
+
+                        modApi.Log($"Command List entries:{commandList.Count}");
+                    }
+                    break;
             }
         }
 
-        // ----- IDispose Interface methods -----------------------------------------
-        public void Dispose()
+        private void updateStatLegacy(int playerID, PlayerInfo playerInfo, ShopStat stat)
         {
-            modApi?.Log("PlaytimeRewardShop Mod: Dispose");
+            modApi.Log($"Try to increase stat with game api");
+
+            PlayerInfoSet playerInfoSet = new PlayerInfoSet()
+            {
+                entityId = playerID
+            };
+
+            if (stat.Name.StartsWith("life"))
+            {
+                // check if the maximum has been reached
+                if (playerInfo.healthMax + stat.quantity > stat.maxStat)
+                {
+                    modApi.Log($"Health of player {playerID} already at max {stat.maxStat}");
+                    showIngameMessage(playerID, $"You already have maximum health");
+                    return;
+                }
+
+                // We are aware that the API provides the maximum health that can currently be increased through food.
+                // How can we tell if maximum health has been temporarily increased by buffs/food?
+                playerInfoSet.healthMax = Convert.ToInt32(playerInfo.healthMax) + stat.quantity;
+            }
+            else if (stat.Name.Contains("xp"))
+            {
+                // check if the maximum has been reached
+                if (playerInfo.exp + stat.quantity > stat.maxStat)
+                {
+                    modApi.Log($"Experience of player {playerID} already at max {stat.maxStat}");
+                    showIngameMessage(playerID, $"You already have maximum experience");
+                    return;
+                }
+
+                playerInfoSet.experiencePoints = Convert.ToInt32(playerInfo.exp) + stat.quantity;
+            }
+
+            modApi.Log($"Try to update the player stats with id {playerInfoSet.entityId}");
+
+            if (gameApi.Game_Request(CmdId.Request_Player_SetPlayerInfo, ++requestNr, playerInfoSet))
+            {
+                // remove the player points
+                PlayerData playerData = readPlayerData(playerID);
+                playerData.Points -= stat.price;
+                savePlayerData(playerID, playerData);
+            }
+            else
+                modApi.Log($"Set player stat did not work for player {playerInfoSet.entityId}");
         }
     }
 }
