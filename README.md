@@ -5,6 +5,10 @@ With this mod, players can buy items from their playtime.
 This is my first Empyrion mod combining the [Backpack Extender](https://github.com/GitHub-TC/EmpyrionBackpackExtender) and [Playtime Rewards](https://github.com/GitHub-TC/EmpyrionPlaytimeRewards) using the DemoMod as template.
 Thanks for all the support from the Empyrion Discord 💜
 
+## Can this mod damage your game files?
+No. This mod has only access to the Empyrion API and does not modify any game files.
+![CleanMod](https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop/blob/main/images/CleanMod.png)
+
 ## Installation
 
 This mod only works on servers. Copy the content of the EmpyrionPlayerRewardsShop_vx_x_X.zip into the folder Content\Mods\
