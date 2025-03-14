@@ -46,7 +46,7 @@ Currently these stats are implemented:
 
 
 ## Usage
-Enter the command into the private or faction chat in your game.
+Enter the command into the server or faction chat in your game.
 
 ```
 \prs help    : shows all available commands in a Window
