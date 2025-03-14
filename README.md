@@ -6,8 +6,8 @@ This is my first Empyrion mod combining the [Backpack Extender](https://github.c
 Thanks for all the support from the Empyrion Discord 💜
 
 ## Can this mod damage your game files?
-![CleanMod](https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop/blob/main/images/CleanMod.png)
-No. This mod has only access to the Empyrion API and does not modify any game files.
+<a href="url"><img src="https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop/blob/main/images/CleanMod.png" align="left" height="48" width="48" ></a>
+No. This mod only has access to the Empyrion API and does not modify any game files. To disable the mod, remove the EmpyrionPlayerRewardsShop folder from Content\Mods\
 
 ## Installation
 
