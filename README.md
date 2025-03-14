@@ -7,7 +7,7 @@ Thanks for all the support from the Empyrion Discord 💜
 
 ## Can this mod damage your game files?
 No. This mod has only access to the Empyrion API and does not modify any game files.
-![CleanMod](https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop/blob/main/images/CleanMod.png)
+![CleanMod](https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop/blob/main/images/CleanMod.png){width=32 height=32}
 
 ## Installation
 
