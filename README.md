@@ -10,7 +10,7 @@ Thanks for all the support from the Empyrion Discord 💜
 This mod only works on servers. Copy the content of the EmpyrionPlayerRewardsShop_vx_x_X.zip into the folder Content\Mods\
 You should have this file structure on your server:
 - Content\Mods\
-	- EmpyrionPlayerRewardsShop
+	- EmpyrionPlayerRewardsShop\
  		- EmpyrionPlayerRewardsShop.dll
    		- EmpyrionPlayerRewardsShop_Info.yaml
 
