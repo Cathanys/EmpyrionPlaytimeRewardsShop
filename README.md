@@ -7,7 +7,7 @@ Thanks for all the support from the Empyrion Discord 💜
 
 ## Can this mod damage your game files?
 ![CleanMod](https://github.com/Cathanys/EmpyrionPlaytimeRewardsShop/blob/main/images/CleanMod.png)
-No. This mod has only access to the Empyrion API and does not modify any game files. To deactivate the mod, remove the folder EmpyrionPlayerRewardsShop from Content\Mods\.
+No. This mod only has access to the Empyrion API and does not modify any game files. To disable the mod, remove the EmpyrionPlayerRewardsShop folder from Content\Mods\
 
 ## Installation
 
