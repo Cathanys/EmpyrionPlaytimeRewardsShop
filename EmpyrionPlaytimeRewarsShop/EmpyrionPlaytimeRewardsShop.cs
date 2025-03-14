@@ -126,7 +126,7 @@ namespace EmpyrionPlaytimeRewardsShop
                 ShopStat newStat = new ShopStat()
                 {
                     Name = "life",
-                    Description = "Health",
+                    Description = "Maximum Health",
                     price = 100,
                     quantity = 100,
                     maxStat = 2000
@@ -141,7 +141,7 @@ namespace EmpyrionPlaytimeRewardsShop
                     quantity = 1000,
                     maxStat = 500000
                 };
-                this.configuration.RewardStats.Add(newStat);
+                this.configuration.RewardStats.Add(newStat2);
 
                 File.WriteAllText(configFilePath, JsonConvert.SerializeObject(this.configuration));
             }
@@ -287,7 +287,7 @@ namespace EmpyrionPlaytimeRewardsShop
             if (commandSplit[1].StartsWith("help"))
             {
                 // print the available commands
-                string helpText = $"Every [c][3399ff]{this.configuration.RewardPeriodInMinutes} minutes[-][/c] you win [c][3399ff]{this.configuration.RewardPointsPerPeriod} points[-][/c]\n\n\n";
+                string helpText = $"Every {this.configuration.RewardPeriodInMinutes} minutes you win {this.configuration.RewardPointsPerPeriod} points\n\n\n";
                 helpText += "You can buy:\n\n";
 
                 foreach(ShopItem item in this.configuration.RewardItems)
@@ -592,7 +592,7 @@ namespace EmpyrionPlaytimeRewardsShop
                 // How can we tell if maximum health has been temporarily increased by buffs/food?
                 playerInfoSet.healthMax = Convert.ToInt32(playerInfo.healthMax) + stat.quantity;
             }
-            else if (stat.Name.Contains("xp"))
+            else if (stat.Name.StartsWith("exp"))
             {
                 // check if the maximum has been reached
                 if (playerInfo.exp + stat.quantity > stat.maxStat)
