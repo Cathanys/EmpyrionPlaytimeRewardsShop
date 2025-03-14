@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmpyrionPlaytimeRewardsShop", "EmpyrionPlaytimeRewarsShop_Client\EmpyrionPlaytimeRewardsShop.csproj", "{50ABB75D-E199-41CD-97CC-97C64700B4F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmpyrionPlaytimeRewardsShop", "EmpyrionPlaytimeRewarsShop\EmpyrionPlaytimeRewardsShop.csproj", "{50ABB75D-E199-41CD-97CC-97C64700B4F1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "JSONFileTestApp\ConsoleApp1.csproj", "{B025B7E0-73EA-4A3F-A7CA-9F5293942A77}"
 EndProject

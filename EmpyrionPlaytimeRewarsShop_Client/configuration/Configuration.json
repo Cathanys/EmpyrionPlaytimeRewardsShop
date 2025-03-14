@@ -1,9 +1,0 @@
-{
-	"ChatCommandPrefix":"/\\prs",
-	"RewardPeriodInMinutes":5,
-	"RewardPointsPerPeriod":10,
-	"RewardItems":[
-	{"Name":"neo","Description":"Neodynium Ore","quantity":100,"price":100,"itemId":4300}],
-	"RewardStats":[
-	{"Name":"life","Description":"Health","quantity":100,"price":100,"maxStat":2000}]
-}
