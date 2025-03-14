@@ -18,7 +18,7 @@ namespace EmpyrionPlaytimeRewardsShop
 
         /// <summary>
         /// increase the number with each request, starting with non zero
-        /// will be incrememted before use
+        /// will be incremented before use
         /// </summary>
         private ushort requestNr = 0;
 
@@ -287,8 +287,8 @@ namespace EmpyrionPlaytimeRewardsShop
             if (commandSplit[1].StartsWith("help"))
             {
                 // print the available commands
-                string helpText = $"Every {this.configuration.RewardPeriodInMinutes} minutes you win {this.configuration.RewardPointsPerPeriod} points\n";
-                helpText += "You can buy:\n";
+                string helpText = $"Every [c][3399ff]{this.configuration.RewardPeriodInMinutes} minutes[-][/c] you win [c][3399ff]{this.configuration.RewardPointsPerPeriod} points[-][/c]\n\n\n";
+                helpText += "You can buy:\n\n";
 
                 foreach(ShopItem item in this.configuration.RewardItems)
                 {
@@ -370,13 +370,26 @@ namespace EmpyrionPlaytimeRewardsShop
                 modApi.GUI.ShowGameMessage(message, prio: 1);
             else
             {
-                // at the moment i don't know how to send the messages on dedicated servers
-                DialogConfig dialogConfig = new DialogConfig();
-                dialogConfig.ButtonTexts = new string[] { "close" };
-                dialogConfig.TitleText = "Playtime Shop";
-                dialogConfig.BodyText = message;
+                if (null != gameApi)
+                {
+                    var outMsg = new IdMsgPrio()
+                    {
+                        id = playerID,
+                        msg = message,
+                        prio = 1
+                    };
+                    gameApi.Game_Request(CmdId.Request_InGameMessage_SinglePlayer, ++requestNr, outMsg);
+                }
+                else
+                {
+                    // at the moment i don't know how to send the messages on dedicated servers
+                    DialogConfig dialogConfig = new DialogConfig();
+                    dialogConfig.ButtonTexts = new string[] { "close" };
+                    dialogConfig.TitleText = "Playtime Shop";
+                    dialogConfig.BodyText = message;
 
-                modApi.Application.ShowDialogBox(playerID, dialogConfig, null, 0);
+                    modApi.Application.ShowDialogBox(playerID, dialogConfig, null, 0);
+                }
             }
         }
 
