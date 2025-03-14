@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace EmpyrionPlaytimeRewardsShop_Client
+namespace EmpyrionPlaytimeRewardsShop
 {
     public class PlayerData
     {

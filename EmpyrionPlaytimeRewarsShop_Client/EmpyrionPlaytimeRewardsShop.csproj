@@ -8,8 +8,8 @@
     <ProjectGuid>{50ABB75D-E199-41CD-97CC-97C64700B4F1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>EmpyrionPlaytimeRewardsShop_Client</RootNamespace>
-    <AssemblyName>EmpyrionPlaytimeRewardsShop_Client</AssemblyName>
+    <RootNamespace>EmpyrionPlaytimeRewardsShop</RootNamespace>
+    <AssemblyName>EmpyrionPlaytimeRewardsShop</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -48,20 +48,17 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="YamlDotNet, Version=16.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
-      <HintPath>..\packages\YamlDotNet.16.3.0\lib\net47\YamlDotNet.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EventItem.cs" />
     <Compile Include="PlayerData.cs" />
     <Compile Include="PlaytimeRewardsShopConfiguration.cs" />
-    <Compile Include="EmpyrionPlaytimeRewardsShop_Client.cs" />
+    <Compile Include="EmpyrionPlaytimeRewardsShop.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="EmpyrionPlaytimeRewardsShop_Client_Info.yaml">
+    <None Include="EmpyrionPlaytimeRewardsShop_Info.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />

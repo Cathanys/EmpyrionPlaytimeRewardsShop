@@ -5,14 +5,11 @@ using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace EmpyrionPlaytimeRewardsShop_Client
+namespace EmpyrionPlaytimeRewardsShop
 {
     // Class implementing the new IMod interface as the legacy modding is not available on client side
-    public class EmpyrionPlaytimeRewardsShop_Client : IMod, ModInterface
+    public class EmpyrionPlaytimeRewardsShop : IMod, ModInterface
     {
         /// <summary>
         /// reference to the mod api 2

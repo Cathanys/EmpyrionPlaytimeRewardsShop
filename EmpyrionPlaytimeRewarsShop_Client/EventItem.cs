@@ -1,6 +1,6 @@
 ﻿using Eleon.Modding;
 
-namespace EmpyrionPlaytimeRewardsShop_Client
+namespace EmpyrionPlaytimeRewardsShop
 {
     class EventItem
     {
