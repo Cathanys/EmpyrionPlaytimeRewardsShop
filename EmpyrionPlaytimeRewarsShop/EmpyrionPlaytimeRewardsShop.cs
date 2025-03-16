@@ -5,6 +5,7 @@ using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace EmpyrionPlaytimeRewardsShop
 {
@@ -288,15 +289,15 @@ namespace EmpyrionPlaytimeRewardsShop
             {
                 // print the available commands
                 string helpText = $"Every {this.configuration.RewardPeriodInMinutes} minutes you win {this.configuration.RewardPointsPerPeriod} points\n\n\n";
-                helpText += "You can buy:\n\n";
+                helpText += "Commands for the faction or server chat:\n\n";
 
                 foreach(ShopItem item in this.configuration.RewardItems)
                 {
-                    helpText += $"{item.quantity} {item.Description} for {item.price} points\n";
+                    helpText += $"{this.configuration.ChatCommandPrefix.Remove(0,1)} buy {item.Name}\t\t{item.quantity} {item.Description} for {item.price} points\n";
                 }
                 foreach (ShopStat item in this.configuration.RewardStats)
                 {
-                    helpText += $"{item.quantity} {item.Description} for {item.price} points\n";
+                    helpText += $"{this.configuration.ChatCommandPrefix.Remove(0,1)} buy {item.Name}\t\t{item.quantity} {item.Description} for {item.price} points\n";
                 }
 
                 DialogConfig dialogConfig = new DialogConfig();
@@ -571,6 +572,8 @@ namespace EmpyrionPlaytimeRewardsShop
 
         private void updateStatLegacy(int playerID, PlayerInfo playerInfo, ShopStat stat)
         {
+            int newPlayerStat = 0;
+
             modApi.Log($"Try to increase stat with game api");
 
             PlayerInfoSet playerInfoSet = new PlayerInfoSet()
@@ -580,29 +583,54 @@ namespace EmpyrionPlaytimeRewardsShop
 
             if (stat.Name.StartsWith("life"))
             {
-                // check if the maximum has been reached
-                if (playerInfo.healthMax + stat.quantity > stat.maxStat)
-                {
-                    modApi.Log($"Health of player {playerID} already at max {stat.maxStat}");
-                    showIngameMessage(playerID, $"You already have maximum health");
+                if (!checkAndIncreaseStat(playerID, stat, Convert.ToInt32(playerInfo.healthMax), ref newPlayerStat))
                     return;
-                }
 
                 // We are aware that the API provides the maximum health that can currently be increased through food.
                 // How can we tell if maximum health has been temporarily increased by buffs/food?
-                playerInfoSet.healthMax = Convert.ToInt32(playerInfo.healthMax) + stat.quantity;
+                playerInfoSet.healthMax = newPlayerStat;
             }
             else if (stat.Name.StartsWith("exp"))
             {
-                // check if the maximum has been reached
-                if (playerInfo.exp + stat.quantity > stat.maxStat)
-                {
-                    modApi.Log($"Experience of player {playerID} already at max {stat.maxStat}");
-                    showIngameMessage(playerID, $"You already have maximum experience");
+                if (!checkAndIncreaseStat(playerID, stat, playerInfo.exp, ref newPlayerStat))
                     return;
-                }
 
-                playerInfoSet.experiencePoints = Convert.ToInt32(playerInfo.exp) + stat.quantity;
+                playerInfoSet.experiencePoints = newPlayerStat;
+            }
+            else if (stat.Name.StartsWith("food"))
+            {
+                if (!checkAndIncreaseStat(playerID, stat, Convert.ToInt32(playerInfo.foodMax), ref newPlayerStat))
+                    return;
+
+                playerInfoSet.foodMax = newPlayerStat;
+            }
+            else if (stat.Name.StartsWith("stamina"))
+            {
+                if (!checkAndIncreaseStat(playerID, stat, Convert.ToInt32(playerInfo.staminaMax), ref newPlayerStat))
+                    return;
+
+                playerInfoSet.staminaMax = newPlayerStat;
+            }
+            else if (stat.Name.StartsWith("oxy"))
+            {
+                if (!checkAndIncreaseStat(playerID, stat, Convert.ToInt32(playerInfo.oxygenMax), ref newPlayerStat))
+                    return;
+
+                playerInfoSet.oxygenMax = newPlayerStat;
+            }
+            else if (stat.Name.StartsWith("rad"))
+            {
+                if (!checkAndIncreaseStat(playerID, stat, Convert.ToInt32(playerInfo.radiationMax), ref newPlayerStat))
+                    return;
+
+                playerInfoSet.radiationMax = newPlayerStat;
+            }
+            else if (stat.Name.StartsWith("temp"))
+            {
+                if (!checkAndIncreaseStat(playerID, stat, Convert.ToInt32(playerInfo.bodyTempMax), ref newPlayerStat))
+                    return;
+
+                playerInfoSet.bodyTempMax = newPlayerStat;
             }
 
             modApi.Log($"Try to update the player stats with id {playerInfoSet.entityId}");
@@ -616,6 +644,21 @@ namespace EmpyrionPlaytimeRewardsShop
             }
             else
                 modApi.Log($"Set player stat did not work for player {playerInfoSet.entityId}");
+        }
+
+        private bool checkAndIncreaseStat(int playerID, ShopStat stat, int playerCurrentStat, ref int playerSetStat)
+        {
+            // check if the maximum has been reached
+            if (playerCurrentStat + stat.quantity > stat.maxStat)
+            {
+                modApi.Log($"{stat.Description} of player {playerID} already at max {stat.maxStat}");
+                showIngameMessage(playerID, $"You already have maximum {stat.Description}");
+                return false;
+            }
+
+            playerSetStat = playerCurrentStat + stat.quantity;
+
+            return true;
         }
     }
 }
