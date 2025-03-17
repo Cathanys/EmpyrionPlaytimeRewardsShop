@@ -3,7 +3,14 @@
 	"RewardPeriodInMinutes":5,
 	"RewardPointsPerPeriod":10,
 	"RewardItems":[
-	{"Name":"neo","Description":"Neodynium Ore","quantity":100,"price":100,"itemId":4300}],
+	{"Name":"neo","Description":"Neodynium Ore","quantity":100,"price":100,"itemId":4300},
+	{"Name":"sat","Description":"Sathium Ore","quantity":100,"price":100,"itemId":4332}
+	],
 	"RewardStats":[
-	{"Name":"life","Description":"Health","quantity":100,"price":100,"maxStat":2000}]
+	{"Name":"life","Description":"Health","quantity":50,"price":500,"maxStat":2000},
+	{"Name":"exp","Description":"Experience","quantity":10000,"price":1000,"maxStat":500000},
+	{"Name":"food","Description":"Food","quantity":50,"price":500,"maxStat":2000},
+	{"Name":"oxy","Description":"Oxygen","quantity":50,"price":500,"maxStat":2000},
+	{"Name":"stamina","Description":"Stamina","quantity":50,"price":500,"maxStat":2000}
+	]
 }
