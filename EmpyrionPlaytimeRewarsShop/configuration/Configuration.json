@@ -4,7 +4,9 @@
 	"RewardPointsPerPeriod":10,
 	"RewardItems":[
 	{"Name":"neo","Description":"Neodynium Ore","quantity":100,"price":100,"itemId":4300},
-	{"Name":"sat","Description":"Sathium Ore","quantity":100,"price":100,"itemId":4332}
+	{"Name":"sat","Description":"Sathium Ore","quantity":100,"price":100,"itemId":4332},
+	{"Name":"jump","Description":"Refined Pentaxid","quantity":1000,"price":1000,"itemId":4342},
+	{"Name":"fuel","Description":"Promethium Hydrocell","quantity":100,"price":500,"itemId":4421}
 	],
 	"RewardStats":[
 	{"Name":"life","Description":"Health","quantity":50,"price":500,"maxStat":2000},
